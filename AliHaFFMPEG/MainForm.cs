@@ -107,6 +107,8 @@ namespace AliHaFFMPEG
             LoadUiSettings();
             cmbSavedPresets_SelectedIndexChanged(sender, e);
             UpdateControlStates();
+            lblPresetInfo.Text = "Active preset: none - pick one from Quick Preset, or click Presets... to browse all " +
+                                 BuiltInPresets.All.Count + " built-in presets.";
             lblProgress.Text = "Ready.";
 
             try
@@ -341,6 +343,8 @@ namespace AliHaFFMPEG
                 // applying a saved preset invalidates the quick preset selection
                 MarkQuickPresetDirty();
                 ApplyPreset(myPreset);
+                lblPresetInfo.Text = "Active preset: " + myPreset.PresetName + " (saved)   ->   " +
+                                     BuiltInPresets.Describe(myPreset);
             }
         }
 
@@ -355,6 +359,38 @@ namespace AliHaFFMPEG
                 BuiltInPresets.All.TryGetValue(name, out var preset))
             {
                 ApplyPreset(preset);
+                lblPresetInfo.Text = "Active preset: " + name + "   ->   " + BuiltInPresets.Describe(preset);
+            }
+        }
+
+        private void btnBrowsePresets_Click(object sender, EventArgs e)
+        {
+            using (var frm = new PresetBrowserForm())
+            {
+                if (frm.ShowDialog(this) != DialogResult.OK || frm.SelectedPreset == null)
+                {
+                    return;
+                }
+
+                ApplyPreset(frm.SelectedPreset);
+
+                // reflect the choice in the Quick Preset combo so it stays visible
+                var index = cmbQuickPreset.Items.IndexOf(frm.SelectedPreset.PresetName);
+                if (index >= 0)
+                {
+                    _suppressQuickPresetReset = true;
+                    try
+                    {
+                        cmbQuickPreset.SelectedIndex = index;
+                    }
+                    finally
+                    {
+                        _suppressQuickPresetReset = false;
+                    }
+                }
+
+                lblPresetInfo.Text = "Active preset: " + frm.SelectedPreset.PresetName + "   ->   " +
+                                     BuiltInPresets.Describe(frm.SelectedPreset);
             }
         }
 
@@ -386,6 +422,11 @@ namespace AliHaFFMPEG
                 finally
                 {
                     _suppressQuickPresetReset = false;
+                }
+
+                if (lblPresetInfo != null)
+                {
+                    lblPresetInfo.Text = "Active preset: custom settings (changed by hand).";
                 }
             }
         }
@@ -1277,32 +1318,5 @@ namespace AliHaFFMPEG
     {
         public int Number { get; set; }
         public string Title { get; set; }
-    }
-
-    public class MyPreset
-    {
-        public string PresetName { get; set; }
-        public override string ToString()
-        {
-            return PresetName;
-        }
-
-        public int? CRF { get; set; }
-        public string VideoCodec { get; set; }
-        public string AudioCodec { get; set; }
-        public string Profile { get; set; }
-        public string Level { get; set; }
-        public string Preset { get; set; }
-        public string Tune { get; set; }
-        public string Format { get; set; }
-        public string PixFormat { get; set; }
-        public string Scale { get; set; }
-        public string Fps { get; set; }
-        public string AudioBitrate { get; set; }
-        public string Subs { get; set; }
-        public string ExtraArgs { get; set; }
-        public string QualityMode { get; set; }
-        public string VideoBitrate { get; set; }
-        public string TargetSizeMb { get; set; }
     }
 }

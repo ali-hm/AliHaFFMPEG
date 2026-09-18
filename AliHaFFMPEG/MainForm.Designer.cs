@@ -98,6 +98,8 @@
             txtTargetSizeMB = new System.Windows.Forms.TextBox();
             btnRetryFailed = new System.Windows.Forms.Button();
             btnOpenOutput = new System.Windows.Forms.Button();
+            btnBrowsePresets = new System.Windows.Forms.Button();
+            lblPresetInfo = new System.Windows.Forms.Label();
             tabs.SuspendLayout();
             SuspendLayout();
             // 
@@ -174,9 +176,9 @@
             // label11
             // 
             label11.AutoSize = true;
-            label11.Location = new System.Drawing.Point(410, 26);
+            label11.Location = new System.Drawing.Point(546, 26);
             label11.Name = "label11";
-            label11.Text = "Saved Presets";
+            label11.Text = "Saved";
             // 
             // label12
             // 
@@ -288,7 +290,7 @@
             // 
             lblHwHint.AutoSize = true;
             lblHwHint.ForeColor = System.Drawing.Color.DimGray;
-            lblHwHint.Location = new System.Drawing.Point(16, 292);
+            lblHwHint.Location = new System.Drawing.Point(16, 318);
             lblHwHint.Name = "lblHwHint";
             lblHwHint.Text = "";
             // 
@@ -446,9 +448,9 @@
             // 
             cmbSavedPresets.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             cmbSavedPresets.FormattingEnabled = true;
-            cmbSavedPresets.Location = new System.Drawing.Point(520, 22);
+            cmbSavedPresets.Location = new System.Drawing.Point(592, 22);
             cmbSavedPresets.Name = "cmbSavedPresets";
-            cmbSavedPresets.Size = new System.Drawing.Size(220, 23);
+            cmbSavedPresets.Size = new System.Drawing.Size(190, 23);
             cmbSavedPresets.TabIndex = 25;
             // 
             // cmbQuickPreset
@@ -457,7 +459,7 @@
             cmbQuickPreset.FormattingEnabled = true;
             cmbQuickPreset.Location = new System.Drawing.Point(120, 22);
             cmbQuickPreset.Name = "cmbQuickPreset";
-            cmbQuickPreset.Size = new System.Drawing.Size(250, 23);
+            cmbQuickPreset.Size = new System.Drawing.Size(310, 23);
             cmbQuickPreset.TabIndex = 40;
             // 
             // cmbScale
@@ -609,19 +611,35 @@
             // 
             // btnSavePreset
             // 
-            btnSavePreset.Location = new System.Drawing.Point(748, 22);
+            btnSavePreset.Location = new System.Drawing.Point(838, 21);
             btnSavePreset.Name = "btnSavePreset";
-            btnSavePreset.Size = new System.Drawing.Size(80, 23);
+            btnSavePreset.Size = new System.Drawing.Size(80, 25);
             btnSavePreset.TabIndex = 26;
             btnSavePreset.Text = "Save";
             btnSavePreset.UseVisualStyleBackColor = true;
             btnSavePreset.Click += btnSavePreset_Click;
             // 
+            // btnBrowsePresets
+            // 
+            btnBrowsePresets.Location = new System.Drawing.Point(436, 22);
+            btnBrowsePresets.Name = "btnBrowsePresets";
+            btnBrowsePresets.Size = new System.Drawing.Size(100, 23);
+            btnBrowsePresets.Text = "Presets...";
+            btnBrowsePresets.UseVisualStyleBackColor = true;
+            // 
+            // lblPresetInfo
+            // 
+            lblPresetInfo.AutoSize = true;
+            lblPresetInfo.ForeColor = System.Drawing.Color.DimGray;
+            lblPresetInfo.Location = new System.Drawing.Point(16, 292);
+            lblPresetInfo.Name = "lblPresetInfo";
+            lblPresetInfo.Text = "";
+            // 
             // btnDeletePreset
             // 
-            btnDeletePreset.Location = new System.Drawing.Point(834, 22);
+            btnDeletePreset.Location = new System.Drawing.Point(788, 21);
             btnDeletePreset.Name = "btnDeletePreset";
-            btnDeletePreset.Size = new System.Drawing.Size(60, 23);
+            btnDeletePreset.Size = new System.Drawing.Size(44, 25);
             btnDeletePreset.TabIndex = 31;
             btnDeletePreset.Text = "Del";
             btnDeletePreset.UseVisualStyleBackColor = true;
@@ -741,6 +759,7 @@
             txtTargetSizeMB.TextChanged += SettingChanged;
             btnRetryFailed.Click += btnRetryFailed_Click;
             btnOpenOutput.Click += btnOpenOutput_Click;
+            btnBrowsePresets.Click += btnBrowsePresets_Click;
             // 
             // tabs
             // 
@@ -785,6 +804,8 @@
             // 
             tabSettings.Controls.Add(label13);
             tabSettings.Controls.Add(cmbQuickPreset);
+            tabSettings.Controls.Add(btnBrowsePresets);
+            tabSettings.Controls.Add(lblPresetInfo);
             tabSettings.Controls.Add(label11);
             tabSettings.Controls.Add(cmbSavedPresets);
             tabSettings.Controls.Add(btnSavePreset);
@@ -956,5 +977,7 @@
         private System.Windows.Forms.TextBox txtTargetSizeMB;
         private System.Windows.Forms.Button btnRetryFailed;
         private System.Windows.Forms.Button btnOpenOutput;
+        private System.Windows.Forms.Button btnBrowsePresets;
+        private System.Windows.Forms.Label lblPresetInfo;
     }
 }

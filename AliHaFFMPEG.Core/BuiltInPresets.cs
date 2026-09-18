@@ -1,7 +1,9 @@
+﻿using System;
 using System.Collections.Generic;
 
-namespace AliHaFFMPEG
+namespace AliHaFFMPEG.Core
 {
+    /// <summary>The one-click presets offered in the UI. Unit-tested, so the list is verifiable.</summary>
     public static class BuiltInPresets
     {
         public static readonly Dictionary<string, MyPreset> All = new Dictionary<string, MyPreset>
@@ -172,5 +174,103 @@ namespace AliHaFFMPEG
                 Format = "gif"
             }
         };
+        static BuiltInPresets()
+        {
+            // every built-in carries its own name so it can be looked up and shown
+            foreach (var pair in All)
+            {
+                if (string.IsNullOrEmpty(pair.Value.PresetName))
+                {
+                    pair.Value.PresetName = pair.Key;
+                }
+            }
+        }
+
+        /// <summary>One-line human-readable summary of what a preset does.</summary>
+        public static string Describe(MyPreset p)
+        {
+            if (p == null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string> { (string.IsNullOrEmpty(p.Format) ? "mkv" : p.Format).ToUpperInvariant() };
+
+            if (IsCopy(p.VideoCodec))
+            {
+                parts.Add("video: copy (no re-encode)");
+            }
+            else if (!string.IsNullOrEmpty(p.VideoCodec))
+            {
+                var video = "video: " + p.VideoCodec;
+                if (string.Equals(p.QualityMode, "TargetSizeMb", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrEmpty(p.TargetSizeMb))
+                {
+                    video += " ~" + p.TargetSizeMb + " MB";
+                }
+                else if (string.Equals(p.QualityMode, "Bitrate", StringComparison.OrdinalIgnoreCase) &&
+                         !string.IsNullOrEmpty(p.VideoBitrate))
+                {
+                    video += " " + p.VideoBitrate;
+                }
+                else if (p.CRF.HasValue)
+                {
+                    video += " CRF " + p.CRF.Value;
+                }
+
+                if (!string.IsNullOrEmpty(p.Preset))
+                {
+                    video += " (" + p.Preset + ")";
+                }
+
+                parts.Add(video);
+            }
+
+            if (IsCopy(p.AudioCodec))
+            {
+                parts.Add("audio: copy");
+            }
+            else if (!string.IsNullOrEmpty(p.AudioCodec))
+            {
+                parts.Add("audio: " + p.AudioCodec +
+                          (string.IsNullOrEmpty(p.AudioBitrate) ? string.Empty : " " + p.AudioBitrate));
+            }
+            else if (string.Equals(p.Format, "wav", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add("audio: PCM (default)");
+            }
+
+            if (!string.IsNullOrEmpty(p.Profile) || !string.IsNullOrEmpty(p.Level))
+            {
+                parts.Add(("profile " + p.Profile + " " + p.Level).Trim());
+            }
+
+            if (!string.IsNullOrEmpty(p.Scale))
+            {
+                parts.Add(p.Scale + "p");
+            }
+
+            if (!string.IsNullOrEmpty(p.Fps))
+            {
+                parts.Add(p.Fps + " fps");
+            }
+
+            if (!string.IsNullOrEmpty(p.Subs))
+            {
+                parts.Add("subs: " + p.Subs);
+            }
+
+            if (!string.IsNullOrEmpty(p.ExtraArgs))
+            {
+                parts.Add(p.ExtraArgs);
+            }
+
+            return string.Join("  |  ", parts);
+        }
+
+        private static bool IsCopy(string value)
+        {
+            return string.Equals(value, "copy", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
