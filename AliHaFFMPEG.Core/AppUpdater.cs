@@ -14,17 +14,20 @@ namespace AliHaFFMPEG.Core
             return assembly.GetName().Version ?? new Version(1, 0, 0, 0);
         }
 
+        /// <summary>
+        /// User-facing version: the first three parts of the assembly version
+        /// ("2.1.0" not "2.1.0.0"). Same value everywhere the app shows itself.
+        /// </summary>
         public static string GetDisplay()
         {
-            var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
-            var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-            if (!string.IsNullOrEmpty(informational))
-            {
-                var plus = informational.IndexOf('+');
-                return plus > 0 ? informational.Substring(0, plus) : informational;
-            }
+            var v = Get();
+            return v.Major + "." + v.Minor + "." + v.Build;
+        }
 
-            return Get().ToString(3);
+        /// <summary>Window and dialog captions, stamped from the same single source.</summary>
+        public static string GetTitle()
+        {
+            return "AliHa FFMPEG v" + GetDisplay();
         }
     }
 

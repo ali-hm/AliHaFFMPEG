@@ -1,4 +1,6 @@
-﻿namespace AliHaFFMPEG
+﻿using AliHaFFMPEG.Core;
+
+namespace AliHaFFMPEG
 {
     partial class MainForm
     {
@@ -918,7 +920,7 @@
             ClientSize = new System.Drawing.Size(980, 560);
             Controls.Add(tabs);
             Name = "MainForm";
-            Text = "AliHa FFMPEG v2.0";
+            Text = Core.AppVersion.GetTitle();
             DragDrop += MainForm_DragDrop;
             DragEnter += MainForm_DragEnter;
             FormClosing += MainForm_FormClosing;

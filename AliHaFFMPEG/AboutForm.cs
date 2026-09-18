@@ -33,8 +33,9 @@ namespace AliHaFFMPEG
         {
             base.OnLoad(e);
 
-            lblVersion.Text = "Version " + AppVersion.GetDisplay();
+            lblVersion.Text = AppVersion.GetTitle();
             lblAuthor.Text = "Author: Ali Hamidi";
+            Text = AppVersion.GetTitle();
             RefreshFfmpegInfo();
             lnkReleases.Text = "github.com/" + _repository + "/releases";
             lblStatus.Text = "Ready.";
