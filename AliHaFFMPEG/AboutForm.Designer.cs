@@ -21,9 +21,11 @@
             lblTitle = new System.Windows.Forms.Label();
             lblVersion = new System.Windows.Forms.Label();
             lblAuthor = new System.Windows.Forms.Label();
+            lblDescription = new System.Windows.Forms.Label();
             lblFfmpeg = new System.Windows.Forms.Label();
             lblStatus = new System.Windows.Forms.Label();
             lnkReleases = new System.Windows.Forms.LinkLabel();
+            lnkGithub = new System.Windows.Forms.LinkLabel();
             btnCheckUpdate = new System.Windows.Forms.Button();
             btnInstallUpdate = new System.Windows.Forms.Button();
             btnDownloadFfmpeg = new System.Windows.Forms.Button();
@@ -54,32 +56,49 @@
             lblAuthor.Name = "lblAuthor";
             lblAuthor.Text = "Author: Ali Hamidi";
             // 
+            // lblDescription
+            // 
+            lblDescription.Location = new System.Drawing.Point(22, 98);
+            lblDescription.Name = "lblDescription";
+            lblDescription.Size = new System.Drawing.Size(520, 40);
+            lblDescription.Text = "A friendly Windows GUI for ffmpeg: batch-convert audio and video with presets, real progress and ETA. No command line required.";
+            // 
             // lblFfmpeg
             // 
-            lblFfmpeg.AutoSize = true;
+            lblFfmpeg.AutoSize = false;
             lblFfmpeg.ForeColor = System.Drawing.Color.DimGray;
-            lblFfmpeg.Location = new System.Drawing.Point(22, 104);
+            lblFfmpeg.Location = new System.Drawing.Point(22, 138);
             lblFfmpeg.Name = "lblFfmpeg";
+            lblFfmpeg.Size = new System.Drawing.Size(520, 32);
             lblFfmpeg.Text = "ffmpeg";
             // 
             // lblStatus
             // 
-            lblStatus.Location = new System.Drawing.Point(22, 136);
+            lblStatus.Location = new System.Drawing.Point(22, 172);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new System.Drawing.Size(520, 36);
+            lblStatus.Size = new System.Drawing.Size(520, 40);
             lblStatus.Text = "";
             // 
             // lnkReleases
             // 
             lnkReleases.AutoSize = true;
-            lnkReleases.Location = new System.Drawing.Point(22, 178);
+            lnkReleases.LinkColor = System.Drawing.Color.RoyalBlue;
+            lnkReleases.Location = new System.Drawing.Point(22, 214);
             lnkReleases.Name = "lnkReleases";
             lnkReleases.Text = "Releases on GitHub";
+            lnkReleases.VisitedLinkColor = System.Drawing.Color.MediumPurple;
             lnkReleases.LinkClicked += lnkReleases_LinkClicked;
+            lnkGithub.AutoSize = true;
+            lnkGithub.LinkColor = System.Drawing.Color.RoyalBlue;
+            lnkGithub.Location = new System.Drawing.Point(322, 214);
+            lnkGithub.Name = "lnkGithub";
+            lnkGithub.Text = "Source code on GitHub";
+            lnkGithub.VisitedLinkColor = System.Drawing.Color.MediumPurple;
+            lnkGithub.LinkClicked += lnkGithub_LinkClicked;
             // 
             // btnCheckUpdate
             // 
-            btnCheckUpdate.Location = new System.Drawing.Point(22, 206);
+            btnCheckUpdate.Location = new System.Drawing.Point(22, 242);
             btnCheckUpdate.Name = "btnCheckUpdate";
             btnCheckUpdate.Size = new System.Drawing.Size(170, 30);
             btnCheckUpdate.Text = "Check for updates";
@@ -89,7 +108,7 @@
             // btnInstallUpdate
             // 
             btnInstallUpdate.Enabled = false;
-            btnInstallUpdate.Location = new System.Drawing.Point(202, 206);
+            btnInstallUpdate.Location = new System.Drawing.Point(202, 242);
             btnInstallUpdate.Name = "btnInstallUpdate";
             btnInstallUpdate.Size = new System.Drawing.Size(190, 30);
             btnInstallUpdate.Text = "Download and install";
@@ -98,7 +117,7 @@
             // 
             // btnDownloadFfmpeg
             // 
-            btnDownloadFfmpeg.Location = new System.Drawing.Point(22, 244);
+            btnDownloadFfmpeg.Location = new System.Drawing.Point(22, 280);
             btnDownloadFfmpeg.Name = "btnDownloadFfmpeg";
             btnDownloadFfmpeg.Size = new System.Drawing.Size(170, 30);
             btnDownloadFfmpeg.Text = "Download ffmpeg";
@@ -107,7 +126,7 @@
             // 
             // btnOpenDataFolder
             // 
-            btnOpenDataFolder.Location = new System.Drawing.Point(202, 244);
+            btnOpenDataFolder.Location = new System.Drawing.Point(202, 280);
             btnOpenDataFolder.Name = "btnOpenDataFolder";
             btnOpenDataFolder.Size = new System.Drawing.Size(190, 30);
             btnOpenDataFolder.Text = "Open data folder";
@@ -116,13 +135,13 @@
             // 
             // progressBar1
             // 
-            progressBar1.Location = new System.Drawing.Point(22, 288);
+            progressBar1.Location = new System.Drawing.Point(22, 324);
             progressBar1.Name = "progressBar1";
             progressBar1.Size = new System.Drawing.Size(520, 12);
             // 
             // btnClose
             // 
-            btnClose.Location = new System.Drawing.Point(432, 312);
+            btnClose.Location = new System.Drawing.Point(432, 348);
             btnClose.Name = "btnClose";
             btnClose.Size = new System.Drawing.Size(110, 30);
             btnClose.Text = "Close";
@@ -135,13 +154,15 @@
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             CancelButton = btnClose;
-            ClientSize = new System.Drawing.Size(564, 356);
+            ClientSize = new System.Drawing.Size(564, 392);
             Controls.Add(lblTitle);
             Controls.Add(lblVersion);
             Controls.Add(lblAuthor);
+            Controls.Add(lblDescription);
             Controls.Add(lblFfmpeg);
             Controls.Add(lblStatus);
             Controls.Add(lnkReleases);
+            Controls.Add(lnkGithub);
             Controls.Add(btnCheckUpdate);
             Controls.Add(btnInstallUpdate);
             Controls.Add(btnDownloadFfmpeg);
@@ -163,9 +184,11 @@
         private System.Windows.Forms.Label lblTitle;
         private System.Windows.Forms.Label lblVersion;
         private System.Windows.Forms.Label lblAuthor;
+        private System.Windows.Forms.Label lblDescription;
         private System.Windows.Forms.Label lblFfmpeg;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.LinkLabel lnkReleases;
+        private System.Windows.Forms.LinkLabel lnkGithub;
         private System.Windows.Forms.Button btnCheckUpdate;
         private System.Windows.Forms.Button btnInstallUpdate;
         private System.Windows.Forms.Button btnDownloadFfmpeg;

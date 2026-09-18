@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -27,6 +27,35 @@ namespace AliHaFFMPEG
                 ? UpdateChecker.DefaultRepository
                 : repository.Trim();
             _onToolsChanged = onToolsChanged;
+
+            StackAboutContent();
+        }
+
+        /// <summary>
+        /// Stacks the variable-height text blocks top-down so a long wrapped
+        /// ffmpeg path or multi-line status can never cover the links/buttons
+        /// below them (fixed Designer coordinates cannot know the wrapped height).
+        /// </summary>
+        private void StackAboutContent()
+        {
+            var y = lblDescription.Top;
+            lblFfmpeg.Top = y + lblDescription.Height + 6;
+            y = lblFfmpeg.Top + lblFfmpeg.Height + 6;
+            lblStatus.Top = y;
+            y += lblStatus.Height + 8;
+            lnkReleases.Top = y;
+            lnkGithub.Top = y;
+            y += Math.Max(lnkReleases.Height, lnkGithub.Height) + 10;
+            btnCheckUpdate.Top = y;
+            btnInstallUpdate.Top = y;
+            y += btnCheckUpdate.Height + 8;
+            btnDownloadFfmpeg.Top = y;
+            btnOpenDataFolder.Top = y;
+            y += btnDownloadFfmpeg.Height + 8;
+            progressBar1.Top = y;
+            y += progressBar1.Height + 8;
+            btnClose.Top = y;
+            ClientSize = new System.Drawing.Size(ClientSize.Width, y + btnClose.Height + 16);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -37,7 +66,9 @@ namespace AliHaFFMPEG
             lblAuthor.Text = "Author: Ali Hamidi";
             Text = AppVersion.GetTitle();
             RefreshFfmpegInfo();
+            StackAboutContent();
             lnkReleases.Text = "github.com/" + _repository + "/releases";
+            lnkGithub.Text = "github.com/" + _repository;
             lblStatus.Text = "Ready.";
 
             // silent check when the dialog opens
@@ -55,6 +86,7 @@ namespace AliHaFFMPEG
 
             var version = FfmpegManager.GetVersion(path);
             lblFfmpeg.Text = "ffmpeg: " + (version ?? "unknown version") + Environment.NewLine + "   " + path;
+            StackAboutContent();
         }
 
         private async Task CheckForUpdatesAsync(bool silent)
@@ -83,12 +115,14 @@ namespace AliHaFFMPEG
                                  (string.IsNullOrEmpty(info.AssetName)
                                      ? "  (no downloadable asset in the release)"
                                      : "  (" + info.AssetName + ")");
+                StackAboutContent();
             }
             catch (Exception ex)
             {
                 lblStatus.Text = silent
                     ? "Update check failed (offline, or the repository is not published yet)."
                     : "Update check failed: " + ex.Message;
+                StackAboutContent();
                 btnInstallUpdate.Enabled = false;
             }
         }
@@ -177,17 +211,11 @@ namespace AliHaFFMPEG
             }
         }
 
-        private void btnOpenDataFolder_Click(object sender, EventArgs e)
-        {
-            AppUpdater.OpenFolder(Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AliHaFFMPEG"));
-        }
-
-        private void lnkReleases_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void OpenUrl(string url)
         {
             try
             {
-                Process.Start(new ProcessStartInfo(UpdateChecker.BuildReleasesPageUrl(_repository))
+                Process.Start(new ProcessStartInfo(url)
                 {
                     UseShellExecute = true
                 });
@@ -196,6 +224,22 @@ namespace AliHaFFMPEG
             {
                 // ignore
             }
+        }
+
+        private void btnOpenDataFolder_Click(object sender, EventArgs e)
+        {
+            AppUpdater.OpenFolder(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AliHaFFMPEG"));
+        }
+
+        private void lnkGithub_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenUrl("https://github.com/" + _repository);
+        }
+
+        private void lnkReleases_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenUrl(UpdateChecker.BuildReleasesPageUrl(_repository));
         }
 
         private void btnClose_Click(object sender, EventArgs e)

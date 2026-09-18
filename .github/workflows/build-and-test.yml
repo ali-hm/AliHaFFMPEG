@@ -1,0 +1,31 @@
+name: build-and-test
+
+# Copyright (c) 2026 Ali Hamidi - MIT License. See LICENSE in the repo root.
+# Validates every push and pull request: full solution build + 140+ unit tests.
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore AliHaFFMPEG.sln
+
+      - name: Build (Release)
+        run: dotnet build AliHaFFMPEG.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test AliHaFFMPEG.Core.Tests -c Release --no-build

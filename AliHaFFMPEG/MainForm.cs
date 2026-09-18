@@ -201,7 +201,14 @@ namespace AliHaFFMPEG
                         var s = JsonConvert.DeserializeObject<UiSettings>(File.ReadAllText(path));
                         if (s != null && !string.IsNullOrWhiteSpace(s.UpdateRepository))
                         {
-                            return s.UpdateRepository.Trim();
+                            var repo = s.UpdateRepository.Trim();
+                            // one-time migration: older builds saved the wrong placeholder repo
+                            if (string.Equals(repo, "AliHamidi/AliHaFFMPEG", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return UpdateChecker.DefaultRepository;
+                            }
+
+                            return repo;
                         }
                     }
                 }

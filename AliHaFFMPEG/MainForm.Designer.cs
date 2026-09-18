@@ -174,7 +174,7 @@ namespace AliHaFFMPEG
             // label10
             // 
             label10.AutoSize = true;
-            label10.Location = new System.Drawing.Point(206, 228);
+            label10.Location = new System.Drawing.Point(226, 223);
             label10.Name = "label10";
             label10.Text = "Level";
             // 
@@ -291,34 +291,34 @@ namespace AliHaFFMPEG
             lblMediaInfo.Size = new System.Drawing.Size(932, 32);
             lblMediaInfo.Text = "Media info appears here when a file is selected.";
             // 
-            // lblHwHint
+            // lblHwHint (variable length: encoder/container counts)
             // 
-            lblHwHint.AutoSize = true;
             lblHwHint.ForeColor = System.Drawing.Color.DimGray;
-            lblHwHint.Location = new System.Drawing.Point(16, 318);
+            lblHwHint.Location = new System.Drawing.Point(16, 332);
             lblHwHint.Name = "lblHwHint";
+            lblHwHint.Size = new System.Drawing.Size(924, 42);
             lblHwHint.Text = "";
             // 
-            // lblCodecInfo
+            // lblCodecInfo (variable length: encoder descriptions)
             // 
-            lblCodecInfo.AutoSize = true;
             lblCodecInfo.ForeColor = System.Drawing.Color.DimGray;
-            lblCodecInfo.Location = new System.Drawing.Point(16, 344);
+            lblCodecInfo.Location = new System.Drawing.Point(16, 374);
             lblCodecInfo.Name = "lblCodecInfo";
+            lblCodecInfo.Size = new System.Drawing.Size(924, 42);
             lblCodecInfo.Text = "";
             // 
-            // lblWarnings
+            // lblWarnings (variable length: compatibility warnings; sits above About button)
             // 
-            lblWarnings.AutoSize = true;
             lblWarnings.ForeColor = System.Drawing.Color.Firebrick;
-            lblWarnings.Location = new System.Drawing.Point(16, 370);
+            lblWarnings.Location = new System.Drawing.Point(16, 416);
             lblWarnings.Name = "lblWarnings";
+            lblWarnings.Size = new System.Drawing.Size(770, 30);
             lblWarnings.Text = "";
             lblWarnings.Visible = false;
             // 
             // btnAbout
             // 
-            btnAbout.Location = new System.Drawing.Point(800, 430);
+            btnAbout.Location = new System.Drawing.Point(800, 442);
             btnAbout.Name = "btnAbout";
             btnAbout.Size = new System.Drawing.Size(118, 30);
             btnAbout.Text = "About";
@@ -469,9 +469,9 @@ namespace AliHaFFMPEG
             cmbLevel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             cmbLevel.FormattingEnabled = true;
             cmbLevel.Items.AddRange(new object[] { "", "3", "4.1", "5" });
-            cmbLevel.Location = new System.Drawing.Point(240, 220);
+            cmbLevel.Location = new System.Drawing.Point(264, 220);
             cmbLevel.Name = "cmbLevel";
-            cmbLevel.Size = new System.Drawing.Size(50, 23);
+            cmbLevel.Size = new System.Drawing.Size(60, 23);
             cmbLevel.TabIndex = 21;
             // 
             // cmbSavedPresets
@@ -657,12 +657,12 @@ namespace AliHaFFMPEG
             btnBrowsePresets.Text = "Presets...";
             btnBrowsePresets.UseVisualStyleBackColor = true;
             // 
-            // lblPresetInfo
+            // lblPresetInfo (variable length: preset description; fixed box so it wraps, never overlaps)
             // 
-            lblPresetInfo.AutoSize = true;
             lblPresetInfo.ForeColor = System.Drawing.Color.DimGray;
-            lblPresetInfo.Location = new System.Drawing.Point(16, 292);
+            lblPresetInfo.Location = new System.Drawing.Point(16, 290);
             lblPresetInfo.Name = "lblPresetInfo";
+            lblPresetInfo.Size = new System.Drawing.Size(924, 42);
             lblPresetInfo.Text = "";
             // 
             // btnDeletePreset
@@ -739,7 +739,7 @@ namespace AliHaFFMPEG
             // chkShutdown
             // 
             chkShutdown.AutoSize = true;
-            chkShutdown.Location = new System.Drawing.Point(380, 355);
+            chkShutdown.Location = new System.Drawing.Point(380, 354);
             chkShutdown.Name = "chkShutdown";
             chkShutdown.Text = "Shut down PC when done";
             chkShutdown.UseVisualStyleBackColor = true;
@@ -747,7 +747,7 @@ namespace AliHaFFMPEG
             // chkNotify
             // 
             chkNotify.AutoSize = true;
-            chkNotify.Location = new System.Drawing.Point(440, 355);
+            chkNotify.Location = new System.Drawing.Point(560, 354);
             chkNotify.Name = "chkNotify";
             chkNotify.Text = "Show message when done";
             chkNotify.UseVisualStyleBackColor = true;

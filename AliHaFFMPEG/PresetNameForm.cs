@@ -5,6 +5,8 @@ namespace AliHaFFMPEG
 {
     public partial class PresetNameForm : Form
     {
+        [System.ComponentModel.DesignerSerializationVisibility(
+            System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public string PresetName { get; set; }
         public PresetNameForm()
         {

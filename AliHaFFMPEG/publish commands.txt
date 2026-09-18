@@ -1,9 +1,12 @@
-﻿dotnet publish -r win-x64 -c Release --self-contained
-dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true
-dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true
+﻿dotnet publish AliHaFFMPEG/AliHaFFMPEG.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=false -o publish
+REM single-file, self-contained, no .NET install needed. Output: publish\AliHaFFMPEG.exe
+REM Zip it: Compress-Archive -Path publish\* -DestinationPath AliHaFFMPEG-win-x64.zip -Force
+REM Then: Get-FileHash AliHaFFMPEG-win-x64.zip -Algorithm SHA256
 
+REM Full release pipeline (does build + zip + SHA256SUMS.txt for you):
+REM pwsh ./scripts/release.ps1
+REM Tag must match <Version> in AliHaFFMPEG.csproj: pwsh ./scripts/release.ps1 -Tag v2.1.0
 
-
-dotnet publish -r linux-x64 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true
-
-dotnet publish -r osx-x64 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true
+REM NOTE: WinForms runs on Windows only - linux-x64 / osx-x64 targets do NOT work for this app.
+REM Old notes kept below for reference - do not use trimmed publish (breaks WinForms):
+REM dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true
