@@ -144,7 +144,7 @@ namespace AliHaFFMPEG
         private async void btnDownloadFfmpeg_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(
-                    "Download the official ffmpeg Windows build (~40 MB) and install ffmpeg.exe + ffprobe.exe into:\n\n" +
+                    "Download the latest BtbN ffmpeg shared build for Windows (~85 MB: ffmpeg.exe, ffprobe.exe and the shared DLLs) and install it into:\n\n" +
                     _installDirectory + "\n\nContinue?",
                     "Download ffmpeg", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             {
@@ -155,10 +155,10 @@ namespace AliHaFFMPEG
             {
                 btnDownloadFfmpeg.Enabled = false;
                 var progress = new Progress<int>(p => progressBar1.Value = Math.Min(100, Math.Max(0, p)));
-                lblStatus.Text = "Downloading ffmpeg...";
+                lblStatus.Text = "Resolving the newest win64 shared build on GitHub...";
 
                 var report = await FfmpegManager
-                    .DownloadAndInstallAsync(FfmpegManager.DefaultWindowsBuildUrl, _installDirectory, progress)
+                    .DownloadAndInstallAsync(_installDirectory, progress)
                     .ConfigureAwait(true);
 
                 lblStatus.Text = report;

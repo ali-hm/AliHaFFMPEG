@@ -21,8 +21,8 @@ namespace AliHaFFMPEG.Core
     /// <summary>Checks GitHub releases for a newer version (parsing is unit-tested; the HTTP call is not).</summary>
     public static class UpdateChecker
     {
-        /// <summary>Change this to your own repository ("owner/repo") once the project is published.</summary>
-        public const string DefaultRepository = "AliHamidi/AliHaFFMPEG";
+        /// <summary>AliHaFFMPEG's own repository, used for update checks.</summary>
+        public const string DefaultRepository = "ali-hm/AliHaFFMPEG";
 
         public static string BuildApiUrl(string repository)
         {
