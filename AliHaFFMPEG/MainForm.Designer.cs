@@ -100,6 +100,9 @@
             btnOpenOutput = new System.Windows.Forms.Button();
             btnBrowsePresets = new System.Windows.Forms.Button();
             lblPresetInfo = new System.Windows.Forms.Label();
+            btnAbout = new System.Windows.Forms.Button();
+            lblCodecInfo = new System.Windows.Forms.Label();
+            lblWarnings = new System.Windows.Forms.Label();
             tabs.SuspendLayout();
             SuspendLayout();
             // 
@@ -293,6 +296,31 @@
             lblHwHint.Location = new System.Drawing.Point(16, 318);
             lblHwHint.Name = "lblHwHint";
             lblHwHint.Text = "";
+            // 
+            // lblCodecInfo
+            // 
+            lblCodecInfo.AutoSize = true;
+            lblCodecInfo.ForeColor = System.Drawing.Color.DimGray;
+            lblCodecInfo.Location = new System.Drawing.Point(16, 344);
+            lblCodecInfo.Name = "lblCodecInfo";
+            lblCodecInfo.Text = "";
+            // 
+            // lblWarnings
+            // 
+            lblWarnings.AutoSize = true;
+            lblWarnings.ForeColor = System.Drawing.Color.Firebrick;
+            lblWarnings.Location = new System.Drawing.Point(16, 370);
+            lblWarnings.Name = "lblWarnings";
+            lblWarnings.Text = "";
+            lblWarnings.Visible = false;
+            // 
+            // btnAbout
+            // 
+            btnAbout.Location = new System.Drawing.Point(800, 430);
+            btnAbout.Name = "btnAbout";
+            btnAbout.Size = new System.Drawing.Size(118, 30);
+            btnAbout.Text = "About";
+            btnAbout.UseVisualStyleBackColor = true;
             // 
             // label24
             // 
@@ -760,6 +788,7 @@
             btnRetryFailed.Click += btnRetryFailed_Click;
             btnOpenOutput.Click += btnOpenOutput_Click;
             btnBrowsePresets.Click += btnBrowsePresets_Click;
+            btnAbout.Click += btnAbout_Click;
             // 
             // tabs
             // 
@@ -851,6 +880,9 @@
             tabSettings.Controls.Add(label26);
             tabSettings.Controls.Add(txtTargetSizeMB);
             tabSettings.Controls.Add(lblHwHint);
+            tabSettings.Controls.Add(lblCodecInfo);
+            tabSettings.Controls.Add(lblWarnings);
+            tabSettings.Controls.Add(btnAbout);
             tabSettings.Location = new System.Drawing.Point(4, 24);
             tabSettings.Name = "tabSettings";
             tabSettings.Size = new System.Drawing.Size(956, 482);
@@ -979,5 +1011,8 @@
         private System.Windows.Forms.Button btnOpenOutput;
         private System.Windows.Forms.Button btnBrowsePresets;
         private System.Windows.Forms.Label lblPresetInfo;
+        private System.Windows.Forms.Button btnAbout;
+        private System.Windows.Forms.Label lblCodecInfo;
+        private System.Windows.Forms.Label lblWarnings;
     }
 }

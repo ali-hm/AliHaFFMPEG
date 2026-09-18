@@ -24,6 +24,7 @@ namespace AliHaFFMPEG
 
         private string _ffmpegPath;
         private string _ffprobePath;
+        private HashSet<string> _availableEncoders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private static readonly HashSet<string> MediaExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -73,8 +74,23 @@ namespace AliHaFFMPEG
             cmbCrf.DataSource = _crfItems;
             cmbCrf.SelectedIndex = 26;
 
+            _ffmpegPath = FfmpegLocator.FindTool("ffmpeg.exe");
+            _ffprobePath = FfmpegLocator.FindTool("ffprobe.exe");
+
+            PopulateCodecAndContainerLists();
             cmbVideoCodec.SelectedIndex = 0;
             cmbOutputFormat.SelectedIndex = 0;
+
+            if (string.IsNullOrEmpty(_ffmpegPath))
+            {
+                var answer = MessageBox.Show(
+                    "ffmpeg.exe was not found.\n\nPut ffmpeg.exe (and ffprobe.exe) next to AliHaFFMPEG.exe, or add them to your PATH.\n\nDownload the official ffmpeg build now?",
+                    "ffmpeg not found", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (answer == DialogResult.Yes)
+                {
+                    ShowAboutDialog();
+                }
+            }
 
             cmbQuickPreset.Items.Add(string.Empty);
             foreach (var name in BuiltInPresets.All.Keys)
@@ -82,24 +98,6 @@ namespace AliHaFFMPEG
                 cmbQuickPreset.Items.Add(name);
             }
             cmbQuickPreset.SelectedIndex = 0;
-
-            _ffmpegPath = FfmpegLocator.FindTool("ffmpeg.exe");
-            _ffprobePath = FfmpegLocator.FindTool("ffprobe.exe");
-            if (string.IsNullOrEmpty(_ffmpegPath))
-            {
-                MessageBox.Show(
-                    "ffmpeg.exe was not found.\n\nPut ffmpeg.exe (and ffprobe.exe) next to AliHaFFMPEG.exe, or add them to your PATH.\nConversion is disabled until then.",
-                    "ffmpeg not found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-
-            var hardware = HardwareEncoderDetector.Detect(_ffmpegPath);
-            foreach (var encoder in hardware)
-            {
-                cmbVideoCodec.Items.Add(encoder);
-            }
-            lblHwHint.Text = hardware.Count > 0
-                ? "Hardware encoders detected and added to the Video Codec list: " + string.Join(", ", hardware)
-                : "No hardware encoders detected - CPU encoding (libx264/libx265) will be used.";
 
             cmbQualityMode.SelectedIndex = 0;
 
@@ -122,6 +120,134 @@ namespace AliHaFFMPEG
             catch
             {
                 // icon is cosmetic only
+            }
+
+            var unusedUpdateCheck = CheckForUpdatesSilentlyAsync();
+        }
+
+        private void PopulateCodecAndContainerLists()
+        {
+            _availableEncoders = EncoderCatalog.DetectAvailable(_ffmpegPath);
+
+            cmbVideoCodec.Items.Clear();
+            cmbVideoCodec.Items.Add(string.Empty);
+            foreach (var option in EncoderCatalog.AvailableVideoEncoders(_availableEncoders))
+            {
+                cmbVideoCodec.Items.Add(option.Name);
+            }
+
+            var hardware = CommandBuilder.HardwareEncoderNames
+                .Where(h => _availableEncoders.Contains(h))
+                .ToList();
+            foreach (var encoder in hardware)
+            {
+                cmbVideoCodec.Items.Add(encoder);
+            }
+            cmbVideoCodec.Items.Add("copy");
+
+            cmbAudioCodec.Items.Clear();
+            cmbAudioCodec.Items.Add(string.Empty);
+            foreach (var option in EncoderCatalog.AvailableAudioEncoders(_availableEncoders))
+            {
+                cmbAudioCodec.Items.Add(option.Name);
+            }
+            cmbAudioCodec.Items.Add("copy");
+
+            cmbOutputFormat.Items.Clear();
+            foreach (var container in ContainerCatalog.All)
+            {
+                cmbOutputFormat.Items.Add(container.Extension);
+            }
+
+            ofd.Filter = BuildMediaFilter();
+
+            lblHwHint.Text = (hardware.Count > 0
+                                 ? "Hardware encoders available: " + string.Join(", ", hardware) + "   |   "
+                                 : "No hardware encoders detected (CPU encoding).   |   ") +
+                             EncoderCatalog.AvailableVideoEncoders(_availableEncoders).Count + " video / " +
+                             EncoderCatalog.AvailableAudioEncoders(_availableEncoders).Count + " audio encoders, " +
+                             ContainerCatalog.All.Length + " containers.";
+        }
+
+        private static string BuildMediaFilter()
+        {
+            var media = string.Join(";", ContainerCatalog.InputExtensions.Select(e => "*" + e));
+            var video = string.Join(";", ContainerCatalog.All
+                .Where(c => !c.AudioOnly && !c.ImageOnly)
+                .Select(c => "*." + c.Extension));
+            var audio = string.Join(";", ContainerCatalog.All
+                .Where(c => c.AudioOnly)
+                .Select(c => "*." + c.Extension));
+            return "Media Files|" + media + "|Video Files|" + video + "|Audio Files|" + audio + "|All Files|*.*";
+        }
+
+        private void ReloadTools()
+        {
+            _ffmpegPath = FfmpegLocator.FindTool("ffmpeg.exe");
+            _ffprobePath = FfmpegLocator.FindTool("ffprobe.exe");
+            PopulateCodecAndContainerLists();
+            BuildParams();
+        }
+
+        private string UpdateRepository
+        {
+            get
+            {
+                try
+                {
+                    var path = Path.Combine(PresetsDir, "settings.json");
+                    if (File.Exists(path))
+                    {
+                        var s = JsonConvert.DeserializeObject<UiSettings>(File.ReadAllText(path));
+                        if (s != null && !string.IsNullOrWhiteSpace(s.UpdateRepository))
+                        {
+                            return s.UpdateRepository.Trim();
+                        }
+                    }
+                }
+                catch
+                {
+                    // fall through to the default
+                }
+
+                return UpdateChecker.DefaultRepository;
+            }
+        }
+
+        private void ShowAboutDialog()
+        {
+            using (var about = new AboutForm(_ffmpegPath, AppContext.BaseDirectory, UpdateRepository, ReloadTools))
+            {
+                about.ShowDialog(this);
+            }
+        }
+
+        private void btnAbout_Click(object sender, EventArgs e)
+        {
+            ShowAboutDialog();
+        }
+
+        private async Task CheckForUpdatesSilentlyAsync()
+        {
+            try
+            {
+                var info = await UpdateChecker.CheckForUpdateAsync(UpdateRepository, AppVersion.Get());
+                if (info == null)
+                {
+                    return;
+                }
+
+                if (MessageBox.Show(
+                        "A newer version is available: " + (info.ReleaseName ?? info.TagName) +
+                        "\n\nOpen the About dialog to download and install it?",
+                        "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                {
+                    ShowAboutDialog();
+                }
+            }
+            catch
+            {
+                // offline, or the repository is not published yet - stay silent on startup
             }
         }
 
@@ -442,19 +568,23 @@ namespace AliHaFFMPEG
             CapturePreset();
             UpdateControlStates();
 
+            var settings = BuildSettings();
+            UpdateInfoLabels(settings);
+
             if (!string.IsNullOrEmpty(txtFilePath.Text) && File.Exists(txtFilePath.Text))
             {
-                txtCommandLine.Text = BuildArgsFor(txtFilePath.Text, ComputeOutputPath(txtFilePath.Text));
+                txtCommandLine.Text = CommandBuilder.Build(settings, txtFilePath.Text,
+                    ComputeOutputPath(txtFilePath.Text), _totalDurationSeconds);
             }
             else
             {
-                txtCommandLine.Text = BuildArgsFor(null, null);
+                txtCommandLine.Text = CommandBuilder.Build(settings, null, null, _totalDurationSeconds);
             }
         }
 
-        private string BuildArgsFor(string inputPath, string outputPath)
+        private ConversionSettings BuildSettings()
         {
-            var settings = new ConversionSettings
+            return new ConversionSettings
             {
                 VideoCodec = ComboValue(cmbVideoCodec),
                 Crf = cmbCrf.SelectedItem is CRFItem crfItem && crfItem.Number != -1 ? crfItem.Number : (int?)null,
@@ -476,8 +606,18 @@ namespace AliHaFFMPEG
                 TrimEndSeconds = TimeParser.ParseTimeString(txtTrimEnd.Text),
                 ExtraArgs = NullIfEmpty(txtExtraArgs.Text.Trim())
             };
+        }
 
-            return CommandBuilder.Build(settings, inputPath, outputPath, _totalDurationSeconds);
+        private void UpdateInfoLabels(ConversionSettings settings)
+        {
+            var container = ContainerCatalog.Find(settings.Format ?? "mkv");
+            lblCodecInfo.Text = "Video: " + EncoderCatalog.Describe(settings.VideoCodec) +
+                                "     Audio: " + EncoderCatalog.Describe(settings.AudioCodec) +
+                                (container != null ? "     Container: " + container.Label : string.Empty);
+
+            var warnings = CompatibilityChecker.Validate(settings, settings.Format);
+            lblWarnings.Visible = warnings.Count > 0;
+            lblWarnings.Text = warnings.Count > 0 ? "Warning: " + string.Join("   ", warnings) : string.Empty;
         }
 
         private static string ComboValue(ComboBox cmb)
@@ -611,7 +751,7 @@ namespace AliHaFFMPEG
             var skipped = 0;
             foreach (var file in files)
             {
-                if (!File.Exists(file) || !MediaExtensions.Contains(Path.GetExtension(file)))
+                if (!File.Exists(file) || !ContainerCatalog.IsInputMediaFile(file))
                 {
                     skipped++;
                     continue;
@@ -756,6 +896,15 @@ namespace AliHaFFMPEG
                 return;
             }
 
+            var warnings = CompatibilityChecker.Validate(BuildSettings(), cmbOutputFormat.SelectedItem as string);
+            if (warnings.Count > 0 &&
+                MessageBox.Show("Compatibility warnings:\n\n- " + string.Join("\n- ", warnings) +
+                                "\n\nContinue anyway?", "Check settings",
+                                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            {
+                return;
+            }
+
             var items = CollectItemsToConvert();
             if (items == null || items.Count == 0)
             {
@@ -797,7 +946,8 @@ namespace AliHaFFMPEG
 
                     item.OutputPath = ComputeOutputPath(item.InputPath);
                     _lastOutputPath = item.OutputPath;
-                    var args = BuildArgsFor(item.InputPath, item.OutputPath);
+                    var args = CommandBuilder.Build(BuildSettings(), item.InputPath, item.OutputPath,
+                        _totalDurationSeconds);
                     txtCommandLine.Text = args;
 
                     var exitCode = await RunFfmpegAsync(args);
@@ -1223,6 +1373,7 @@ namespace AliHaFFMPEG
             public string DestFolder { get; set; }
             public bool ShutdownWhenDone { get; set; }
             public bool NotifyWhenDone { get; set; }
+            public string UpdateRepository { get; set; }
         }
 
         private void LoadUiSettings()
@@ -1260,7 +1411,8 @@ namespace AliHaFFMPEG
                 {
                     DestFolder = txtDestFolder.Text,
                     ShutdownWhenDone = chkShutdown.Checked,
-                    NotifyWhenDone = chkNotify.Checked
+                    NotifyWhenDone = chkNotify.Checked,
+                    UpdateRepository = UpdateRepository
                 };
                 File.WriteAllText(Path.Combine(PresetsDir, "settings.json"), JsonConvert.SerializeObject(s));
             }

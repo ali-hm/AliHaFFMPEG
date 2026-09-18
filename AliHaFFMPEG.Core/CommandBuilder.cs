@@ -16,7 +16,78 @@ namespace AliHaFFMPEG.Core
 
         public static bool IsAudioOnlyFormat(string format)
         {
-            return format != null && AudioOnlyFormats.Contains(format, StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(format))
+            {
+                return false;
+            }
+
+            var container = ContainerCatalog.Find(format);
+            if (container != null)
+            {
+                return container.AudioOnly;
+            }
+
+            return AudioOnlyFormats.Contains(format, StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>ffmpeg's MP3 encoder is called libmp3lame - accept the friendly alias too.</summary>
+        public static string NormalizeAudioCodec(string audioCodec)
+        {
+            if (string.Equals(audioCodec, "mp3", StringComparison.OrdinalIgnoreCase))
+            {
+                return "libmp3lame";
+            }
+
+            return audioCodec;
+        }
+
+        /// <summary>Encoders that take -crf for constant quality.</summary>
+        public static bool SupportsCrf(string codec)
+        {
+            return codec != null && new[]
+            {
+                "libx264", "libx265", "libvpx", "libvpx-vp9", "libaom-av1", "libsvtav1"
+            }.Contains(codec, StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>VP8/VP9/AV1 need "-b:v 0" alongside -crf to mean constant quality.</summary>
+        public static bool NeedsZeroBitrateForCrf(string codec)
+        {
+            return codec != null && new[]
+            {
+                "libvpx", "libvpx-vp9", "libaom-av1", "libsvtav1"
+            }.Contains(codec, StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>-preset is understood by x264/x265 and the NVENC/QSV wrappers, not by vpx/amf/mpeg.</summary>
+        public static bool SupportsEncoderPreset(string codec)
+        {
+            if (string.IsNullOrEmpty(codec))
+            {
+                return false;
+            }
+
+            return codec.Equals("libx264", StringComparison.OrdinalIgnoreCase) ||
+                   codec.Equals("libx265", StringComparison.OrdinalIgnoreCase) ||
+                   codec.EndsWith("_nvenc", StringComparison.OrdinalIgnoreCase) ||
+                   codec.EndsWith("_qsv", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>-tune only exists for the x264/x265 encoders.</summary>
+        public static bool SupportsTune(string codec)
+        {
+            return codec != null &&
+                   (codec.Equals("libx264", StringComparison.OrdinalIgnoreCase) ||
+                    codec.Equals("libx265", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>mpeg4/mpeg2video use a qscale instead of crf.</summary>
+        public static bool UsesQScale(string codec)
+        {
+            return codec != null &&
+                   (codec.Equals("mpeg4", StringComparison.OrdinalIgnoreCase) ||
+                    codec.Equals("mpeg2video", StringComparison.OrdinalIgnoreCase) ||
+                    codec.Equals("mpeg1video", StringComparison.OrdinalIgnoreCase));
         }
 
         public static bool IsHardwareEncoder(string codec)
@@ -34,7 +105,7 @@ namespace AliHaFFMPEG.Core
 
             var sb = new StringBuilder();
             var videoCodec = s.VideoCodec;
-            var audioCodec = s.AudioCodec;
+            var audioCodec = NormalizeAudioCodec(s.AudioCodec);
             var format = string.IsNullOrEmpty(s.Format) ? "mkv" : s.Format;
             var isAudioOnly = IsAudioOnlyFormat(format);
             var isGif = string.Equals(format, "gif", StringComparison.OrdinalIgnoreCase);
@@ -77,12 +148,12 @@ namespace AliHaFFMPEG.Core
                 {
                     AppendQuality(sb, s, totalDurationSeconds);
 
-                    if (!string.IsNullOrEmpty(s.EncoderPreset))
+                    if (!string.IsNullOrEmpty(s.EncoderPreset) && SupportsEncoderPreset(videoCodec))
                     {
                         sb.AppendFormat("-preset {0} ", s.EncoderPreset);
                     }
 
-                    if (!string.IsNullOrEmpty(s.Tune))
+                    if (!string.IsNullOrEmpty(s.Tune) && SupportsTune(videoCodec))
                     {
                         sb.AppendFormat("-tune {0} ", s.Tune);
                     }
@@ -179,11 +250,49 @@ namespace AliHaFFMPEG.Core
                     break;
 
                 default:
-                    if (s.Crf.HasValue)
-                    {
-                        AppendCrf(sb, s.VideoCodec, s.Crf.Value);
-                    }
+                    AppendConstantQuality(sb, s);
                     break;
+            }
+        }
+
+        private static void AppendConstantQuality(StringBuilder sb, ConversionSettings s)
+        {
+            if (!s.Crf.HasValue)
+            {
+                return;
+            }
+
+            var codec = s.VideoCodec;
+            var crf = s.Crf.Value;
+
+            if (IsHardwareEncoder(codec))
+            {
+                AppendCrf(sb, codec, crf);
+                return;
+            }
+
+            if (UsesQScale(codec))
+            {
+                // mpeg4/mpeg2video: map 0-51 (crf range) onto 1-31 (qscale range)
+                var qscale = 1 + (int)Math.Round(crf * 30.0 / 51.0);
+                sb.AppendFormat("-q:v {0} ", Math.Max(1, Math.Min(31, qscale)));
+                return;
+            }
+
+            if (string.Equals(codec, "ffv1", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(codec, "prores", StringComparison.OrdinalIgnoreCase))
+            {
+                // lossless / profile-based encoders do not take -crf
+                return;
+            }
+
+            if (SupportsCrf(codec))
+            {
+                sb.AppendFormat("-crf {0} ", crf);
+                if (NeedsZeroBitrateForCrf(codec))
+                {
+                    sb.Append("-b:v 0 ");
+                }
             }
         }
 

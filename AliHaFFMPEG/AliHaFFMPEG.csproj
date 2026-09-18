@@ -5,6 +5,12 @@
         <TargetFramework>net8.0-windows</TargetFramework>
         <UseWindowsForms>true</UseWindowsForms>
         <ApplicationIcon>app.ico</ApplicationIcon>
+        <Version>2.1.0</Version>
+        <AssemblyTitle>AliHa FFMPEG</AssemblyTitle>
+        <Product>AliHa FFMPEG</Product>
+        <Company>Ali Hamidi</Company>
+        <Authors>Ali Hamidi</Authors>
+        <Description>FFmpeg wrapper and GUI for everyday media conversion</Description>
     </PropertyGroup>
 
     <ItemGroup>
