@@ -27,6 +27,16 @@ namespace AliHaFFMPEG
                 AudioBitrate = "128k",
                 Format = "mkv"
             },
+            ["Fit in 25 MB (target size)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                QualityMode = "TargetSizeMb",
+                TargetSizeMb = "25",
+                Preset = "medium",
+                AudioCodec = "aac",
+                AudioBitrate = "128k",
+                Format = "mkv"
+            },
             ["Discord / WhatsApp (small)"] = new MyPreset
             {
                 VideoCodec = "libx264",

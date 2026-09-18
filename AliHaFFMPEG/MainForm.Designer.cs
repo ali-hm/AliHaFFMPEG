@@ -90,6 +90,14 @@
             tabCommand = new System.Windows.Forms.TabPage();
             ofd = new System.Windows.Forms.OpenFileDialog();
             oFolderDialog = new System.Windows.Forms.FolderBrowserDialog();
+            label24 = new System.Windows.Forms.Label();
+            label25 = new System.Windows.Forms.Label();
+            label26 = new System.Windows.Forms.Label();
+            cmbQualityMode = new System.Windows.Forms.ComboBox();
+            txtVideoBitrate = new System.Windows.Forms.TextBox();
+            txtTargetSizeMB = new System.Windows.Forms.TextBox();
+            btnRetryFailed = new System.Windows.Forms.Button();
+            btnOpenOutput = new System.Windows.Forms.Button();
             tabs.SuspendLayout();
             SuspendLayout();
             // 
@@ -280,9 +288,69 @@
             // 
             lblHwHint.AutoSize = true;
             lblHwHint.ForeColor = System.Drawing.Color.DimGray;
-            lblHwHint.Location = new System.Drawing.Point(16, 262);
+            lblHwHint.Location = new System.Drawing.Point(16, 292);
             lblHwHint.Name = "lblHwHint";
             lblHwHint.Text = "";
+            // 
+            // label24
+            // 
+            label24.AutoSize = true;
+            label24.Location = new System.Drawing.Point(16, 256);
+            label24.Name = "label24";
+            label24.Text = "Quality Mode";
+            // 
+            // label25
+            // 
+            label25.AutoSize = true;
+            label25.Location = new System.Drawing.Point(330, 256);
+            label25.Name = "label25";
+            label25.Text = "Video Bitrate";
+            // 
+            // label26
+            // 
+            label26.AutoSize = true;
+            label26.Location = new System.Drawing.Point(630, 256);
+            label26.Name = "label26";
+            label26.Text = "Target Size (MB)";
+            // 
+            // cmbQualityMode
+            // 
+            cmbQualityMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            cmbQualityMode.FormattingEnabled = true;
+            cmbQualityMode.Items.AddRange(new object[] { "CRF (quality)", "Video Bitrate", "Target Size (MB)" });
+            cmbQualityMode.Location = new System.Drawing.Point(120, 252);
+            cmbQualityMode.Name = "cmbQualityMode";
+            cmbQualityMode.Size = new System.Drawing.Size(200, 23);
+            // 
+            // txtVideoBitrate
+            // 
+            txtVideoBitrate.Location = new System.Drawing.Point(434, 252);
+            txtVideoBitrate.Name = "txtVideoBitrate";
+            txtVideoBitrate.PlaceholderText = "e.g. 3000k";
+            txtVideoBitrate.Size = new System.Drawing.Size(90, 23);
+            // 
+            // txtTargetSizeMB
+            // 
+            txtTargetSizeMB.Location = new System.Drawing.Point(740, 252);
+            txtTargetSizeMB.Name = "txtTargetSizeMB";
+            txtTargetSizeMB.PlaceholderText = "e.g. 25";
+            txtTargetSizeMB.Size = new System.Drawing.Size(100, 23);
+            // 
+            // btnRetryFailed
+            // 
+            btnRetryFailed.Location = new System.Drawing.Point(258, 350);
+            btnRetryFailed.Name = "btnRetryFailed";
+            btnRetryFailed.Size = new System.Drawing.Size(110, 27);
+            btnRetryFailed.Text = "Retry Failed";
+            btnRetryFailed.UseVisualStyleBackColor = true;
+            // 
+            // btnOpenOutput
+            // 
+            btnOpenOutput.Location = new System.Drawing.Point(16, 425);
+            btnOpenOutput.Name = "btnOpenOutput";
+            btnOpenOutput.Size = new System.Drawing.Size(170, 27);
+            btnOpenOutput.Text = "Open Output Folder";
+            btnOpenOutput.UseVisualStyleBackColor = true;
             // 
             // cmbCrf
             // 
@@ -623,7 +691,7 @@
             // chkShutdown
             // 
             chkShutdown.AutoSize = true;
-            chkShutdown.Location = new System.Drawing.Point(270, 355);
+            chkShutdown.Location = new System.Drawing.Point(380, 355);
             chkShutdown.Name = "chkShutdown";
             chkShutdown.Text = "Shut down PC when done";
             chkShutdown.UseVisualStyleBackColor = true;
@@ -668,6 +736,11 @@
             txtFilePath.TextChanged += txtFilePath_TextChanged;
             lstQueue.DragEnter += MainForm_DragEnter;
             lstQueue.DragDrop += MainForm_DragDrop;
+            cmbQualityMode.SelectedIndexChanged += SettingChanged;
+            txtVideoBitrate.TextChanged += SettingChanged;
+            txtTargetSizeMB.TextChanged += SettingChanged;
+            btnRetryFailed.Click += btnRetryFailed_Click;
+            btnOpenOutput.Click += btnOpenOutput_Click;
             // 
             // tabs
             // 
@@ -693,6 +766,8 @@
             tabFiles.Controls.Add(lblMediaInfo);
             tabFiles.Controls.Add(btnClearQueue);
             tabFiles.Controls.Add(btnRemoveSelected);
+            tabFiles.Controls.Add(btnRetryFailed);
+            tabFiles.Controls.Add(btnOpenOutput);
             tabFiles.Controls.Add(btnAddFiles);
             tabFiles.Controls.Add(chkShutdown);
             tabFiles.Controls.Add(chkNotify);
@@ -748,6 +823,12 @@
             tabSettings.Controls.Add(cmbOutputName);
             tabSettings.Controls.Add(label21);
             tabSettings.Controls.Add(txtExtraArgs);
+            tabSettings.Controls.Add(label24);
+            tabSettings.Controls.Add(cmbQualityMode);
+            tabSettings.Controls.Add(label25);
+            tabSettings.Controls.Add(txtVideoBitrate);
+            tabSettings.Controls.Add(label26);
+            tabSettings.Controls.Add(txtTargetSizeMB);
             tabSettings.Controls.Add(lblHwHint);
             tabSettings.Location = new System.Drawing.Point(4, 24);
             tabSettings.Name = "tabSettings";
@@ -867,5 +948,13 @@
         private System.Windows.Forms.TabPage tabCommand;
         private System.Windows.Forms.OpenFileDialog ofd;
         private System.Windows.Forms.FolderBrowserDialog oFolderDialog;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.Label label25;
+        private System.Windows.Forms.Label label26;
+        private System.Windows.Forms.ComboBox cmbQualityMode;
+        private System.Windows.Forms.TextBox txtVideoBitrate;
+        private System.Windows.Forms.TextBox txtTargetSizeMB;
+        private System.Windows.Forms.Button btnRetryFailed;
+        private System.Windows.Forms.Button btnOpenOutput;
     }
 }

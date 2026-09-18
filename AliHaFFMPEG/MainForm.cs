@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using AliHaFFMPEG.Core;
 using Newtonsoft.Json;
 
 namespace AliHaFFMPEG
@@ -44,6 +45,7 @@ namespace AliHaFFMPEG
         private readonly List<QueueItem> _queue = new List<QueueItem>();
         private string _lastRunArgs;
         private string _lastLogFile;
+        private string _lastOutputPath;
 
         public MainForm()
         {
@@ -81,8 +83,8 @@ namespace AliHaFFMPEG
             }
             cmbQuickPreset.SelectedIndex = 0;
 
-            _ffmpegPath = FfmpegTools.FindTool("ffmpeg.exe");
-            _ffprobePath = FfmpegTools.FindTool("ffprobe.exe");
+            _ffmpegPath = FfmpegLocator.FindTool("ffmpeg.exe");
+            _ffprobePath = FfmpegLocator.FindTool("ffprobe.exe");
             if (string.IsNullOrEmpty(_ffmpegPath))
             {
                 MessageBox.Show(
@@ -90,7 +92,7 @@ namespace AliHaFFMPEG
                     "ffmpeg not found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
-            var hardware = FfmpegTools.DetectHardwareEncoders(_ffmpegPath);
+            var hardware = HardwareEncoderDetector.Detect(_ffmpegPath);
             foreach (var encoder in hardware)
             {
                 cmbVideoCodec.Items.Add(encoder);
@@ -99,10 +101,26 @@ namespace AliHaFFMPEG
                 ? "Hardware encoders detected and added to the Video Codec list: " + string.Join(", ", hardware)
                 : "No hardware encoders detected - CPU encoding (libx264/libx265) will be used.";
 
+            cmbQualityMode.SelectedIndex = 0;
+
             LoadPresets();
+            LoadUiSettings();
             cmbSavedPresets_SelectedIndexChanged(sender, e);
             UpdateControlStates();
             lblProgress.Text = "Ready.";
+
+            try
+            {
+                var iconPath = Path.Combine(AppContext.BaseDirectory, "app.ico");
+                if (File.Exists(iconPath))
+                {
+                    Icon = new Icon(iconPath);
+                }
+            }
+            catch
+            {
+                // icon is cosmetic only
+            }
         }
 
         #region Presets
@@ -214,6 +232,10 @@ namespace AliHaFFMPEG
                 SelectCombo(cmbFps, preset.Fps);
                 SelectCombo(cmbAudioBitrate, preset.AudioBitrate);
                 SelectCombo(cmbSubs, preset.Subs);
+                cmbQualityMode.SelectedIndex = preset.QualityMode == "Bitrate" ? 1 :
+                    preset.QualityMode == "TargetSizeMb" ? 2 : 0;
+                txtVideoBitrate.Text = preset.VideoBitrate ?? string.Empty;
+                txtTargetSizeMB.Text = preset.TargetSizeMb ?? string.Empty;
                 txtExtraArgs.Text = preset.ExtraArgs ?? string.Empty;
             }
             finally
@@ -243,6 +265,13 @@ namespace AliHaFFMPEG
             _currentPreset.Fps = ComboValue(cmbFps);
             _currentPreset.AudioBitrate = ComboValue(cmbAudioBitrate);
             _currentPreset.Subs = ComboValue(cmbSubs);
+            _currentPreset.QualityMode = cmbQualityMode.SelectedIndex == 1 ? "Bitrate" :
+                cmbQualityMode.SelectedIndex == 2 ? "TargetSizeMb" : "Crf";
+            _currentPreset.VideoBitrate = NullIfEmpty(txtVideoBitrate.Text.Trim());
+            var targetSize = ParseNullableDouble(txtTargetSizeMB.Text);
+            _currentPreset.TargetSizeMb = targetSize.HasValue
+                ? targetSize.Value.ToString("0.#", CultureInfo.InvariantCulture)
+                : null;
             var extra = txtExtraArgs.Text.Trim();
             _currentPreset.ExtraArgs = extra.Length > 0 ? extra : null;
         }
@@ -384,171 +413,48 @@ namespace AliHaFFMPEG
 
         private string BuildArgsFor(string inputPath, string outputPath)
         {
-            var sb = new StringBuilder();
-            var videoCodec = ComboValue(cmbVideoCodec);
-            var audioCodec = ComboValue(cmbAudioCodec);
-            var format = cmbOutputFormat.SelectedItem as string ?? "mkv";
-            var isAudioOnly = format == "mp3" || format == "m4a" || format == "wav";
-            var isGif = string.Equals(format, "gif", StringComparison.OrdinalIgnoreCase);
-            var reEncodingVideo = !isAudioOnly && !isGif && !string.IsNullOrEmpty(videoCodec) && videoCodec != "copy";
-
-            var trimStart = ParseTimeString(txtTrimStart.Text);
-            var trimEnd = ParseTimeString(txtTrimEnd.Text);
-
-            if (!string.IsNullOrEmpty(inputPath))
+            var settings = new ConversionSettings
             {
-                sb.AppendFormat("-i \"{0}\" ", inputPath);
-            }
+                VideoCodec = ComboValue(cmbVideoCodec),
+                Crf = cmbCrf.SelectedItem is CRFItem crfItem && crfItem.Number != -1 ? crfItem.Number : (int?)null,
+                QualityMode = (QualityMode)Math.Max(0, cmbQualityMode.SelectedIndex),
+                VideoBitrate = NullIfEmpty(txtVideoBitrate.Text.Trim()),
+                TargetSizeMb = ParseNullableDouble(txtTargetSizeMB.Text),
+                AudioCodec = ComboValue(cmbAudioCodec),
+                AudioBitrate = ComboValue(cmbAudioBitrate),
+                Profile = ComboValue(cmbProfile),
+                Level = cmbProfile.SelectedIndex > 0 ? ComboValue(cmbLevel) : null,
+                EncoderPreset = ComboValue(cmbPreset),
+                Tune = ComboValue(cmbTune),
+                PixFormat = ComboValue(cmbPixFormat),
+                ScaleHeight = ComboValue(cmbScale),
+                Fps = ComboValue(cmbFps),
+                Subtitles = ComboValue(cmbSubs),
+                Format = cmbOutputFormat.SelectedItem as string,
+                TrimStartSeconds = TimeParser.ParseTimeString(txtTrimStart.Text),
+                TrimEndSeconds = TimeParser.ParseTimeString(txtTrimEnd.Text),
+                ExtraArgs = NullIfEmpty(txtExtraArgs.Text.Trim())
+            };
 
-            // trim: -ss before -i for fast seek; with a start-trim, end becomes a duration (-t)
-            if (trimStart.HasValue)
-            {
-                sb.AppendFormat("-ss {0} ", FormatSeconds(trimStart.Value));
-            }
-            if (trimEnd.HasValue)
-            {
-                if (trimStart.HasValue && _totalDurationSeconds.HasValue)
-                {
-                    // start + end -> fast seek + duration
-                    var dur = Math.Max(0.1, trimEnd.Value - trimStart.Value);
-                    sb.AppendFormat("-t {0} ", FormatSeconds(dur));
-                }
-                else
-                {
-                    // end only -> absolute stop position
-                    sb.AppendFormat("-to {0} ", FormatSeconds(trimEnd.Value));
-                }
-            }
-
-            var mapTarget = isAudioOnly ? "-map 0:a -vn " : "-map 0 -map -0:s? ";
-            sb.Append(mapTarget);
-
-            if (isAudioOnly || isGif)
-            {
-                // no video-specific options for audio-only or GIF output
-            }
-            else
-            {
-
-            if (!string.IsNullOrEmpty(videoCodec))
-            {
-                sb.AppendFormat("-c:v {0} ", videoCodec);
-            }
-
-            if (reEncodingVideo)
-            {
-                if (cmbCrf.SelectedItem is CRFItem crfItem && crfItem.Number != -1)
-                {
-                    sb.AppendFormat("-crf {0} ", crfItem.Number);
-                }
-
-                if (cmbPreset.SelectedIndex > 0)
-                {
-                    sb.AppendFormat("-preset {0} ", cmbPreset.SelectedItem);
-                }
-
-                if (cmbTune.SelectedIndex > 0)
-                {
-                    sb.AppendFormat("-tune {0} ", cmbTune.SelectedItem);
-                }
-
-                if (cmbPixFormat.SelectedIndex > 0)
-                {
-                    sb.AppendFormat("-pix_fmt {0} ", cmbPixFormat.SelectedItem);
-                }
-            }
-
-                if (videoCodec == "libx264" && cmbProfile.SelectedIndex > 0)
-                {
-                    sb.AppendFormat("-profile:v {0} ", cmbProfile.SelectedItem);
-                    if (cmbLevel.SelectedIndex > 0)
-                    {
-                        sb.AppendFormat("-level:v {0} ", cmbLevel.SelectedItem);
-                    }
-                }
-
-                if (cmbScale.SelectedIndex > 0)
-                {
-                    sb.AppendFormat("-vf scale=-2:{0} ", cmbScale.SelectedItem);
-                }
-
-                if (cmbFps.SelectedIndex > 0)
-                {
-                    sb.AppendFormat("-r {0} ", cmbFps.SelectedItem);
-                }
-            }
-
-            if (isGif)
-            {
-                // GIF: 10 fps, max 480px wide, optimized palette, no audio, loop forever
-                sb.Append("-vf \"fps=10,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse\" ");
-                sb.Append("-an -loop 0 ");
-            }
-
-            if (!string.IsNullOrEmpty(audioCodec))
-            {
-                sb.AppendFormat("-c:a {0} ", audioCodec);
-            }
-
-            if (cmbAudioBitrate.SelectedIndex > 0 && !string.IsNullOrEmpty(audioCodec) && audioCodec != "copy")
-            {
-                sb.AppendFormat("-b:a {0} ", cmbAudioBitrate.SelectedItem);
-            }
-
-            var extra = txtExtraArgs.Text.Trim();
-            if (extra.Length > 0)
-            {
-                sb.Append(extra).Append(' ');
-            }
-
-            if (!string.IsNullOrEmpty(outputPath))
-            {
-                sb.AppendFormat("\"{0}\" ", outputPath);
-            }
-
-            return sb.ToString().TrimEnd();
-        }
-
-        private static double? ParseTimeString(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return null;
-            }
-
-            text = text.Trim();
-
-            // accepts "90", "1:30", "01:02:03", "01:02:03.5"
-            if (text.Contains(":"))
-            {
-                double seconds = 0;
-                foreach (var part in text.Split(':'))
-                {
-                    if (!double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-                    {
-                        return null;
-                    }
-                    seconds = seconds * 60 + value;
-                }
-                return seconds;
-            }
-
-            if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var plain))
-            {
-                return plain;
-            }
-
-            return null;
-        }
-
-        private static string FormatSeconds(double seconds)
-        {
-            return seconds.ToString("0.###", CultureInfo.InvariantCulture);
+            return CommandBuilder.Build(settings, inputPath, outputPath, _totalDurationSeconds);
         }
 
         private static string ComboValue(ComboBox cmb)
         {
             return cmb.SelectedIndex > 0 ? cmb.SelectedItem as string : null;
+        }
+
+        private static string NullIfEmpty(string value)
+        {
+            return string.IsNullOrEmpty(value) ? null : value;
+        }
+
+        private static double? ParseNullableDouble(string text)
+        {
+            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) &&
+                   value > 0
+                ? value
+                : (double?)null;
         }
 
         private string ComputeOutputPath(string inputPath)
@@ -590,14 +496,17 @@ namespace AliHaFFMPEG
             var videoCodec = ComboValue(cmbVideoCodec);
             var audioCodec = ComboValue(cmbAudioCodec);
             var format = cmbOutputFormat.SelectedItem as string ?? "mkv";
-            var isAudioOnly = format == "mp3" || format == "m4a" || format == "wav";
+            var isAudioOnly = CommandBuilder.IsAudioOnlyFormat(format);
             var isGif = string.Equals(format, "gif", StringComparison.OrdinalIgnoreCase);
             var reEncodingVideo = !isAudioOnly && !isGif && !string.IsNullOrEmpty(videoCodec) && videoCodec != "copy";
+            var qualityMode = Math.Max(0, cmbQualityMode.SelectedIndex);
 
-            cmbCrf.Enabled = reEncodingVideo;
+            cmbCrf.Enabled = reEncodingVideo && qualityMode == 0;
             cmbPreset.Enabled = reEncodingVideo;
             cmbTune.Enabled = reEncodingVideo;
             cmbPixFormat.Enabled = reEncodingVideo;
+            txtVideoBitrate.Enabled = reEncodingVideo && qualityMode == 1;
+            txtTargetSizeMB.Enabled = reEncodingVideo && qualityMode == 2;
             cmbScale.Enabled = !isAudioOnly && !isGif;
             cmbFps.Enabled = !isAudioOnly && !isGif;
             cmbProfile.Enabled = videoCodec == "libx264" && !isAudioOnly && !isGif;
@@ -752,12 +661,14 @@ namespace AliHaFFMPEG
                 return;
             }
 
-            var info = FfmpegTools.GetMediaInfo(_ffprobePath, path);
+            var info = MediaInfoReader.GetMediaInfo(_ffprobePath, path);
             if (info == null)
             {
                 lblMediaInfo.Text = "Media info unavailable for this file.";
                 return;
             }
+
+            _totalDurationSeconds = info.DurationSeconds;
 
             var parts = new List<string>();
             if (info.Width.HasValue && info.Height.HasValue)
@@ -839,11 +750,12 @@ namespace AliHaFFMPEG
 
                     if (!item.TotalSeconds.HasValue)
                     {
-                        item.TotalSeconds = FfmpegTools.GetDurationSeconds(_ffprobePath, item.InputPath);
+                        item.TotalSeconds = MediaInfoReader.GetDurationSeconds(_ffprobePath, item.InputPath);
                     }
                     _totalDurationSeconds = item.TotalSeconds;
 
                     item.OutputPath = ComputeOutputPath(item.InputPath);
+                    _lastOutputPath = item.OutputPath;
                     var args = BuildArgsFor(item.InputPath, item.OutputPath);
                     txtCommandLine.Text = args;
 
@@ -1225,10 +1137,103 @@ namespace AliHaFFMPEG
             }
         }
 
+        private void btnRetryFailed_Click(object sender, EventArgs e)
+        {
+            if (converting)
+            {
+                return;
+            }
+
+            var reset = 0;
+            foreach (var item in _queue
+                         .Where(x => x.Status == QueueStatus.Failed || x.Status == QueueStatus.Canceled)
+                         .ToList())
+            {
+                item.Status = QueueStatus.Pending;
+                RefreshQueueRow(item);
+                reset++;
+            }
+
+            if (reset > 0)
+            {
+                lblProgress.Text = $"{reset} item(s) reset to Pending - press Convert.";
+            }
+        }
+
+        private void btnOpenOutput_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_lastOutputPath) && File.Exists(_lastOutputPath))
+            {
+                try { Process.Start("explorer.exe", $"/select,\"{_lastOutputPath}\""); } catch { }
+            }
+            else if (!string.IsNullOrEmpty(txtDestFolder.Text) && Directory.Exists(txtDestFolder.Text))
+            {
+                try { Process.Start("explorer.exe", $"\"{txtDestFolder.Text}\""); } catch { }
+            }
+            else
+            {
+                MessageBox.Show("Nothing converted yet. The output folder opens after a successful conversion.",
+                    "Open Output", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private class UiSettings
+        {
+            public string DestFolder { get; set; }
+            public bool ShutdownWhenDone { get; set; }
+            public bool NotifyWhenDone { get; set; }
+        }
+
+        private void LoadUiSettings()
+        {
+            try
+            {
+                var path = Path.Combine(PresetsDir, "settings.json");
+                if (!File.Exists(path))
+                {
+                    return;
+                }
+
+                var s = JsonConvert.DeserializeObject<UiSettings>(File.ReadAllText(path));
+                if (s == null)
+                {
+                    return;
+                }
+
+                txtDestFolder.Text = s.DestFolder ?? string.Empty;
+                chkShutdown.Checked = s.ShutdownWhenDone;
+                chkNotify.Checked = s.NotifyWhenDone;
+            }
+            catch
+            {
+                // settings are optional
+            }
+        }
+
+        private void SaveUiSettings()
+        {
+            try
+            {
+                Directory.CreateDirectory(PresetsDir);
+                var s = new UiSettings
+                {
+                    DestFolder = txtDestFolder.Text,
+                    ShutdownWhenDone = chkShutdown.Checked,
+                    NotifyWhenDone = chkNotify.Checked
+                };
+                File.WriteAllText(Path.Combine(PresetsDir, "settings.json"), JsonConvert.SerializeObject(s));
+            }
+            catch
+            {
+                // settings are optional
+            }
+        }
+
         #endregion
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            SaveUiSettings();
             if (converting)
             {
                 if (MessageBox.Show("We are converting. Do you want to stop the conversion and exit?",
@@ -1296,5 +1301,8 @@ namespace AliHaFFMPEG
         public string AudioBitrate { get; set; }
         public string Subs { get; set; }
         public string ExtraArgs { get; set; }
+        public string QualityMode { get; set; }
+        public string VideoBitrate { get; set; }
+        public string TargetSizeMb { get; set; }
     }
 }
