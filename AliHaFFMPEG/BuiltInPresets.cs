@@ -1,0 +1,152 @@
+using System.Collections.Generic;
+
+namespace AliHaFFMPEG
+{
+    public static class BuiltInPresets
+    {
+        public static readonly Dictionary<string, MyPreset> All = new Dictionary<string, MyPreset>
+        {
+            ["Web / YouTube 1080p (H.264 + AAC)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 20,
+                Preset = "medium",
+                PixFormat = "yuv420p",
+                AudioCodec = "aac",
+                AudioBitrate = "192k",
+                Scale = "1080",
+                Format = "mp4",
+                Subs = "mov_text"
+            },
+            ["Half the size (H.265 / x265)"] = new MyPreset
+            {
+                VideoCodec = "libx265",
+                CRF = 28,
+                Preset = "medium",
+                AudioCodec = "aac",
+                AudioBitrate = "128k",
+                Format = "mkv"
+            },
+            ["Discord / WhatsApp (small)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 28,
+                Preset = "veryfast",
+                PixFormat = "yuv420p",
+                AudioCodec = "aac",
+                AudioBitrate = "96k",
+                Scale = "720",
+                Format = "mp4",
+                Subs = "drop"
+            },
+            ["Remux (copy, no re-encode)"] = new MyPreset
+            {
+                VideoCodec = "copy",
+                AudioCodec = "copy",
+                Subs = "copy",
+                Format = "mkv"
+            },
+            ["Extract audio (MP3 320k)"] = new MyPreset
+            {
+                AudioCodec = "mp3",
+                AudioBitrate = "320k",
+                Format = "mp3"
+            },
+            ["Extract audio (M4A / AAC 256k)"] = new MyPreset
+            {
+                AudioCodec = "aac",
+                AudioBitrate = "256k",
+                Format = "m4a"
+            },
+            ["Extract audio (WAV lossless)"] = new MyPreset
+            {
+                Format = "wav"
+            },
+            ["Web 720p (H.264 fast)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 23,
+                Preset = "veryfast",
+                PixFormat = "yuv420p",
+                AudioCodec = "aac",
+                AudioBitrate = "128k",
+                Scale = "720",
+                Format = "mp4",
+                Subs = "mov_text"
+            },
+            ["Tiny file for email (480p)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 30,
+                Preset = "superfast",
+                PixFormat = "yuv420p",
+                AudioCodec = "aac",
+                AudioBitrate = "96k",
+                Scale = "480",
+                Format = "mp4",
+                Subs = "drop"
+            },
+            ["Slow PC / fast convert (x264 ultrafast)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 23,
+                Preset = "ultrafast",
+                PixFormat = "yuv420p",
+                AudioCodec = "aac",
+                AudioBitrate = "128k",
+                Format = "mp4"
+            },
+            ["Best quality archive (x265 slower)"] = new MyPreset
+            {
+                VideoCodec = "libx265",
+                CRF = 24,
+                Preset = "slower",
+                AudioCodec = "aac",
+                AudioBitrate = "192k",
+                Format = "mkv"
+            },
+            ["10-bit HEVC (anime / gradients)"] = new MyPreset
+            {
+                VideoCodec = "libx265",
+                CRF = 24,
+                Preset = "slow",
+                PixFormat = "yuv420p10le",
+                AudioCodec = "copy",
+                Format = "mkv"
+            },
+            ["Vertical video (TikTok / Reels 720x1280)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 23,
+                Preset = "medium",
+                PixFormat = "yuv420p",
+                AudioCodec = "aac",
+                AudioBitrate = "128k",
+                Format = "mp4",
+                ExtraArgs = "-vf scale=720:-2"
+            },
+            ["Loudness fix (EBU R128)"] = new MyPreset
+            {
+                VideoCodec = "copy",
+                AudioCodec = "aac",
+                AudioBitrate = "192k",
+                Format = "mkv",
+                ExtraArgs = "-af loudnorm"
+            },
+            ["Deinterlace (old camcorder / TV)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 20,
+                Preset = "veryfast",
+                PixFormat = "yuv420p",
+                AudioCodec = "copy",
+                Format = "mp4",
+                ExtraArgs = "-vf yadif"
+            },
+            ["Animated GIF (10 fps, 480px)"] = new MyPreset
+            {
+                Format = "gif"
+            }
+        };
+    }
+}
