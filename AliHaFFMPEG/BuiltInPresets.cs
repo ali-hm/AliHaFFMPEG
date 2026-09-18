@@ -37,6 +37,20 @@ namespace AliHaFFMPEG
                 AudioBitrate = "128k",
                 Format = "mkv"
             },
+            ["Old TV / USB player (H.264 High 4.1)"] = new MyPreset
+            {
+                VideoCodec = "libx264",
+                CRF = 18,
+                Preset = "ultrafast",
+                PixFormat = "yuv420p",
+                Profile = "high",
+                Level = "4.1",
+                Scale = "1080",
+                AudioCodec = "aac",
+                AudioBitrate = "192k",
+                Subs = "drop",
+                Format = "mp4"
+            },
             ["Discord / WhatsApp (small)"] = new MyPreset
             {
                 VideoCodec = "libx264",
