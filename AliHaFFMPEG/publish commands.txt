@@ -1,12 +1,69 @@
 ﻿dotnet publish AliHaFFMPEG/AliHaFFMPEG.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=false -o publish
-REM single-file, self-contained, no .NET install needed. Output: publish\AliHaFFMPEG.exe
-REM Zip it: Compress-Archive -Path publish\* -DestinationPath AliHaFFMPEG-win-x64.zip -Force
-REM Then: Get-FileHash AliHaFFMPEG-win-x64.zip -Algorithm SHA256
-
-REM Full release pipeline (does build + zip + SHA256SUMS.txt for you):
-REM pwsh ./scripts/release.ps1
-REM Tag must match <Version> in AliHaFFMPEG.csproj: pwsh ./scripts/release.ps1 -Tag v2.1.0
-
+REM single-file, self-contained, no .NET install needed. publish\AliHaFFMPEG.exe is staged in .\release\ as AliHaFFMPEG-win-x64.zip (git-ignored).
+REM
+REM ===============================  BUILD / PUBLISH  ===============================
+dotnet publish AliHaFFMPEG/AliHaFFMPEG.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=false -o publish
+REM single-file, self-contained, no .NET install needed. publish\AliHaFFMPEG.exe is staged in .\release\ as AliHaFFMPEG-win-x64.zip (git-ignored).
+REM
+REM ============================  HOW TO MAKE A RELEASE  ============================
+REM Two modes. In BOTH: you pass -Version, the script writes it into the csproj,
+REM runs the tests, commits "Release vX.Y.Z", creates the tag, and creates the
+REM GitHub Release. They differ only in who builds the zip:
+REM
+REM ############################################################################
+REM #  MODE 1 - LOCAL: the zip is built on this machine
+REM ############################################################################
+REM
+REM   pwsh ./scripts/release.ps1 -Mode Local -Version 2.2.0
+REM
+REM   1. Refuses to run on a dirty working tree (commit or stash first).
+REM      Needs gh (GitHub CLI): winget install GitHub.cli  +  gh auth login.
+REM   2. Writes <Version>2.2.0</Version> into AliHaFFMPEG\AliHaFFMPEG.csproj.
+REM   3. Runs the tests (a red build can never be released).
+REM   4. Commits "Release v2.2.0" and creates the annotated tag v2.2.0.
+REM   5. Builds .\release\AliHaFFMPEG-win-x64.zip + SHA256SUMS.txt
+REM      + RELEASE_NOTES.md (changelog = commit subjects since the previous
+REM      tag, via scripts\Get-ReleaseNotes.ps1).
+REM   6. Pushes the branch, then creates the GitHub Release and uploads the
+REM      local zip + checksums. gh creates the remote tag at the release
+REM      commit - no tag-push event, so the workflow does NOT run and no
+REM      duplicate zip is built by CI.
+REM
+REM   Dry run (nothing pushed/published, full local zip):
+REM     pwsh ./scripts/release.ps1 -Mode Local -Version 2.2.0 -NoPush
+REM   Reuse an existing publish\ output instead of rebuilding:
+REM     ... -Mode Local -Version 2.2.0 -SkipBuild
+REM
+REM ############################################################################
+REM #  MODE 2 - REMOTE: the GitHub workflow builds the zip
+REM ############################################################################
+REM
+REM   pwsh ./scripts/release.ps1 -Mode Remote -Version 2.2.0
+REM
+REM   1-4. Same as Local (bump, test, commit, tag).
+REM   5. Writes .\release\RELEASE_NOTES.md (no local build).
+REM   6. Pushes the branch AND the tag - the tag push triggers the "release"
+REM      workflow, which builds, tests, zips and attaches the asset.
+REM   7. Also creates the GitHub Release itself (without assets) so the notes
+REM      are deterministic; if the workflow created it first, the script just
+REM      refreshes the notes. Without gh installed it simply lets the
+REM      workflow create the release.
+REM
+REM   Dry run (nothing pushed, no workflow run):
+REM     pwsh ./scripts/release.ps1 -Mode Remote -Version 2.2.0 -NoPush
+REM
+REM ############################################################################
+REM #  NOTES
+REM ############################################################################
+REM   - Both modes: -NoCommit / -NoTag / -NoPush stop before the matching step.
+REM   - No duplicate releases: Local never triggers CI (no tag push); Remote's
+REM     workflow is idempotent (updates assets + notes if the release exists).
+REM     Re-running Remote for an already-released tag updates, not duplicates.
+REM   - The tag must equal "v" + the version you pass; the workflow re-checks
+REM     that against <Version> in the csproj and fails on mismatch.
+REM   - The updater reads the newest release of ali-hm/AliHaFFMPEG, so the
+REM     Release must be published, not just tagged.
+REM
 REM NOTE: WinForms runs on Windows only - linux-x64 / osx-x64 targets do NOT work for this app.
-REM Old notes kept below for reference - do not use trimmed publish (breaks WinForms):
-REM dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true
+REM
+REM NOTE: WinForms runs on Windows only - linux-x64 / osx-x64 targets do NOT work for this app.

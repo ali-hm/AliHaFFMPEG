@@ -11,6 +11,7 @@ namespace AliHaFFMPEG
         public PresetNameForm()
         {
             InitializeComponent();
+            AppIcon.Apply(this);
         }
 
         private void btnOK_Click(object sender, EventArgs e)

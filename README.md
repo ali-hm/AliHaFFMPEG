@@ -69,14 +69,59 @@ The solution contains three projects:
 
 ### Make a release
 
+Two modes. In **both** you pass `-Version`; the script writes it into the csproj,
+runs the tests, commits `Release vX.Y.Z`, tags it and creates the GitHub
+Release. They differ only in **who builds the zip**.
+
+**Mode 1 — Local** (zip built on this machine; needs [gh](https://cli.github.com)):
+
 ```powershell
-pwsh ./scripts/release.ps1 -Tag v2.2.0        # or: powershell ./scripts/release.ps1 -Tag v2.2.0
-git push --tags
+pwsh ./scripts/release.ps1 -Mode Local -Version 2.2.0
 ```
 
-This builds the self-contained `win-x64` zip, generates `SHA256SUMS.txt`, and —
-once the `release` GitHub workflow exists — the "Check for updates" feature
-inside the app will find it.
+1. Refuses a dirty working tree.
+2. Writes `<Version>2.2.0</Version>` into `AliHaFFMPEG/AliHaFFMPEG.csproj`
+   (single source of truth for the app version).
+3. Runs the tests — a red build can never be released.
+4. Commits the bump as `Release v2.2.0` and creates the annotated tag `v2.2.0`.
+5. Builds + zips `release/AliHaFFMPEG-win-x64.zip`, writes
+   `release/SHA256SUMS.txt`, and writes `release/RELEASE_NOTES.md` from the
+   commit subjects since the previous tag (`scripts/Get-ReleaseNotes.ps1`).
+6. Pushes the branch, then creates the GitHub Release and uploads the local
+   zip + checksums. `gh` creates the remote tag at the release commit — no
+   tag-push event, so CI does **not** build a second zip.
+
+**Mode 2 — Remote** (the GitHub workflow builds the zip):
+
+```powershell
+pwsh ./scripts/release.ps1 -Mode Remote -Version 2.2.0
+```
+
+1–4. Same as Local.
+5. Writes `release/RELEASE_NOTES.md` but does **not** build locally.
+6. Pushes the branch **and the tag** — the tag push triggers the `release`
+   workflow (`.github/workflows/release.yml`), which re-verifies the tag
+   matches `<Version>`, builds, tests, zips and attaches the asset.
+7. Also creates the GitHub Release itself (without assets) so the notes are
+   deterministic; if the workflow created it first, the script just refreshes
+   the notes. Without `gh` installed, it simply lets the workflow do it.
+
+**Dry runs** — nothing pushed or published:
+
+```powershell
+pwsh ./scripts/release.ps1 -Mode Local -Version 2.2.0 -NoPush     # full local zip
+pwsh ./scripts/release.ps1 -Mode Local -Version 2.2.0 -NoPush -SkipBuild   # reuse publish\
+pwsh ./scripts/release.ps1 -Mode Remote -Version 2.2.0 -NoPush    # notes only
+```
+
+`-NoCommit` / `-NoTag` stop before the matching step in either mode.
+
+No duplicate releases: Local never triggers CI (no tag push), and Remote's
+workflow is idempotent — it updates the assets + notes if the release already
+exists. The in-app "Check for updates" picks the release up from there.
+
+Notes for both paths: the release zip contains **only** `AliHaFFMPEG.exe` (~45 MB,
+no .NET install required) — ffmpeg is deliberately not bundled, see License below.
 
 ## How updates work
 

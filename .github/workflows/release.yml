@@ -1,0 +1,122 @@
+name: release
+
+# Copyright (c) 2026 Ali Hamidi - MIT License. See LICENSE in the repo root.
+# On a "vX.Y.Z" tag this builds the self-contained win-x64 zip and publishes it
+# as a GitHub Release, which is what the in-app "Check for updates" feature reads.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (must match <Version> in AliHaFFMPEG.csproj, e.g. v2.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Resolve tag
+        id: tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.inputs.tag }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "${{ github.ref_name }}" }
+          if ([string]::IsNullOrWhiteSpace($tag)) { throw "No tag supplied." }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing $tag"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          # full history AND tags, otherwise Get-ReleaseNotes.ps1 cannot find the
+          # previous release tag and the changelog would always come out empty
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Verify tag matches <Version>
+        shell: pwsh
+        run: |
+          [xml]$xml = Get-Content "AliHaFFMPEG/AliHaFFMPEG.csproj"
+          $version = $xml.Project.PropertyGroup.Version
+          $expected = "v$version"
+          $tag = "${{ steps.tag.outputs.tag }}"
+          if ($tag -ne $expected) {
+            throw "Tag '$tag' does not match <Version>$version</Version> ($expected). Bump the csproj or retag."
+          }
+          Write-Host "Tag and <Version> agree: $expected"
+
+      - name: Build and test
+        shell: pwsh
+        run: |
+          dotnet build AliHaFFMPEG.sln -c Release
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+          dotnet test AliHaFFMPEG.Core.Tests -c Release --no-build
+          if ($LASTEXITCODE -ne 0) { throw "tests failed" }
+
+      - name: Publish (single-file, self-contained, win-x64)
+        shell: pwsh
+        run: |
+          dotnet publish AliHaFFMPEG/AliHaFFMPEG.csproj -c Release -r win-x64 `
+            --self-contained true `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            /p:PublishTrimmed=false `
+            /p:DebugType=none `
+            -o publish
+          if ($LASTEXITCODE -ne 0) { throw "publish failed" }
+
+      - name: Zip and checksum
+        id: package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          if (Test-Path release/AliHaFFMPEG-win-x64.zip) { Remove-Item release/AliHaFFMPEG-win-x64.zip -Force }
+          Compress-Archive -Path publish/AliHaFFMPEG.exe -DestinationPath release/AliHaFFMPEG-win-x64.zip -Force
+          $hash = (Get-FileHash release/AliHaFFMPEG-win-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  AliHaFFMPEG-win-x64.zip" | Set-Content release/SHA256SUMS.txt
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          Write-Host "SHA256: $hash"
+
+      - name: Create or update GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.tag.outputs.tag }}"
+          $changelog = ./scripts/Get-ReleaseNotes.ps1 -Tag $tag
+          $notes = @(
+            "Self-contained Windows build of AliHa FFMPEG $tag (x64).",
+            "Extract the zip anywhere and run AliHaFFMPEG.exe.",
+            "ffmpeg itself is downloaded on first run (About > Download ffmpeg).",
+            "",
+            $changelog,
+            "",
+            "SHA256 (AliHaFFMPEG-win-x64.zip): ${{ steps.package.outputs.sha256 }}"
+          ) -join "`r`n"
+          $notes | Set-Content -NoNewline RELEASE_NOTES.md
+
+          # Idempotent: release.ps1 -Mode Remote creates the release (without
+          # assets) right after pushing the tag, so it may already exist here.
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag release/AliHaFFMPEG-win-x64.zip release/SHA256SUMS.txt --clobber
+            gh release edit $tag --notes-file RELEASE_NOTES.md --latest
+            Write-Host "Release existed - assets updated, notes refreshed."
+          } else {
+            gh release create $tag release/AliHaFFMPEG-win-x64.zip release/SHA256SUMS.txt `
+              --title "AliHa FFMPEG $tag" `
+              --notes-file RELEASE_NOTES.md `
+              --latest
+          }

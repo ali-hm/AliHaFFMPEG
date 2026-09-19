@@ -28,9 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="app.ico">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
+      <EmbeddedResource Include="app.ico" LogicalName="AliHaFFMPEG.app.ico" />
     </ItemGroup>
 
 </Project>

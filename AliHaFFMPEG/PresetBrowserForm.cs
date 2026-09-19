@@ -13,6 +13,7 @@ namespace AliHaFFMPEG
         public PresetBrowserForm()
         {
             InitializeComponent();
+            AppIcon.Apply(this);
         }
 
         protected override void OnLoad(EventArgs e)

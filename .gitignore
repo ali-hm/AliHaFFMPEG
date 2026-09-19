@@ -2,3 +2,11 @@
 bin/
 obj/
 .idea/
+
+# release artifacts produced by scripts/release.ps1 - NEVER COMMIT, those are
+# time/machine-stamped build outputs, not sources. Keep them out of the repo
+# so clones stay small and you never accidentally tag someone's local build.
+publish/
+release/
+SHA256SUMS.txt
+RELEASE_NOTES.md

@@ -58,25 +58,27 @@
             // 
             // lblDescription
             // 
+            lblDescription.AutoSize = true;
             lblDescription.Location = new System.Drawing.Point(22, 98);
+            lblDescription.MaximumSize = new System.Drawing.Size(520, 0);
             lblDescription.Name = "lblDescription";
-            lblDescription.Size = new System.Drawing.Size(520, 40);
             lblDescription.Text = "A friendly Windows GUI for ffmpeg: batch-convert audio and video with presets, real progress and ETA. No command line required.";
             // 
             // lblFfmpeg
             // 
-            lblFfmpeg.AutoSize = false;
+            lblFfmpeg.AutoSize = true;
             lblFfmpeg.ForeColor = System.Drawing.Color.DimGray;
             lblFfmpeg.Location = new System.Drawing.Point(22, 138);
+            lblFfmpeg.MaximumSize = new System.Drawing.Size(520, 0);
             lblFfmpeg.Name = "lblFfmpeg";
-            lblFfmpeg.Size = new System.Drawing.Size(520, 32);
             lblFfmpeg.Text = "ffmpeg";
             // 
             // lblStatus
             // 
+            lblStatus.AutoSize = true;
             lblStatus.Location = new System.Drawing.Point(22, 172);
+            lblStatus.MaximumSize = new System.Drawing.Size(520, 0);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new System.Drawing.Size(520, 40);
             lblStatus.Text = "";
             // 
             // lnkReleases

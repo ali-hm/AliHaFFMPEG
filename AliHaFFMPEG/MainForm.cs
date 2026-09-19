@@ -109,20 +109,18 @@ namespace AliHaFFMPEG
                                  BuiltInPresets.All.Count + " built-in presets.";
             lblProgress.Text = "Ready.";
 
-            try
-            {
-                var iconPath = Path.Combine(AppContext.BaseDirectory, "app.ico");
-                if (File.Exists(iconPath))
-                {
-                    Icon = new Icon(iconPath);
-                }
-            }
-            catch
-            {
-                // icon is cosmetic only
-            }
+            Icon = LoadAppIcon();
 
             var unusedUpdateCheck = CheckForUpdatesSilentlyAsync();
+        }
+
+        /// <summary>
+        /// Loads the window icon from the embedded resource (works in single-file and
+        /// published builds), falling back to a loose app.ico beside the exe.
+        /// </summary>
+        private static Icon LoadAppIcon()
+        {
+            return AppIcon.Get();
         }
 
         private void PopulateCodecAndContainerLists()

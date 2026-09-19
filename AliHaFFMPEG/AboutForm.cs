@@ -20,6 +20,7 @@ namespace AliHaFFMPEG
         public AboutForm(string ffmpegPath, string installDirectory, string repository, Action onToolsChanged = null)
         {
             InitializeComponent();
+            AppIcon.Apply(this);
 
             _ffmpegPath = ffmpegPath;
             _installDirectory = installDirectory;
@@ -28,7 +29,35 @@ namespace AliHaFFMPEG
                 : repository.Trim();
             _onToolsChanged = onToolsChanged;
 
+            // Any text change can change a wrapped label's height, so re-flow the
+            // stack whenever it happens. Without this the buttons/links below stay
+            // put and a longer path or status ends up drawn over them.
+            lblFfmpeg.TextChanged += OnStackedTextChanged;
+            lblStatus.TextChanged += OnStackedTextChanged;
+
             StackAboutContent();
+        }
+
+        private bool _stacking;
+
+        private void OnStackedTextChanged(object sender, EventArgs e)
+        {
+            // TextChanged fires *before* the label's AutoSize has re-measured its
+            // wrapped height, so stacking right now would use the old height.
+            // Force the layout, stack, then stack once more after the pending
+            // layout pass so a height that settles later still pushes the
+            // controls below it instead of overlapping them.
+            var label = sender as Label;
+            label?.PerformLayout();
+
+            StackAboutContent();
+
+            if (!IsHandleCreated || IsDisposed)
+            {
+                return;
+            }
+
+            BeginInvoke(new Action(StackAboutContent));
         }
 
         /// <summary>
@@ -38,24 +67,33 @@ namespace AliHaFFMPEG
         /// </summary>
         private void StackAboutContent()
         {
-            var y = lblDescription.Top;
-            lblFfmpeg.Top = y + lblDescription.Height + 6;
-            y = lblFfmpeg.Top + lblFfmpeg.Height + 6;
-            lblStatus.Top = y;
-            y += lblStatus.Height + 8;
-            lnkReleases.Top = y;
-            lnkGithub.Top = y;
-            y += Math.Max(lnkReleases.Height, lnkGithub.Height) + 10;
-            btnCheckUpdate.Top = y;
-            btnInstallUpdate.Top = y;
-            y += btnCheckUpdate.Height + 8;
-            btnDownloadFfmpeg.Top = y;
-            btnOpenDataFolder.Top = y;
-            y += btnDownloadFfmpeg.Height + 8;
-            progressBar1.Top = y;
-            y += progressBar1.Height + 8;
-            btnClose.Top = y;
-            ClientSize = new System.Drawing.Size(ClientSize.Width, y + btnClose.Height + 16);
+            if (_stacking) { return; }
+            _stacking = true;
+            try
+            {
+                var y = lblDescription.Top;
+                lblFfmpeg.Top = y + lblDescription.Height + 6;
+                y = lblFfmpeg.Top + lblFfmpeg.Height + 6;
+                lblStatus.Top = y;
+                y += lblStatus.Height + 8;
+                lnkReleases.Top = y;
+                lnkGithub.Top = y;
+                y += Math.Max(lnkReleases.Height, lnkGithub.Height) + 10;
+                btnCheckUpdate.Top = y;
+                btnInstallUpdate.Top = y;
+                y += btnCheckUpdate.Height + 8;
+                btnDownloadFfmpeg.Top = y;
+                btnOpenDataFolder.Top = y;
+                y += btnDownloadFfmpeg.Height + 8;
+                progressBar1.Top = y;
+                y += progressBar1.Height + 8;
+                btnClose.Top = y;
+                ClientSize = new System.Drawing.Size(ClientSize.Width, y + btnClose.Height + 16);
+            }
+            finally
+            {
+                _stacking = false;
+            }
         }
 
         protected override void OnLoad(EventArgs e)
@@ -80,12 +118,18 @@ namespace AliHaFFMPEG
             var path = string.IsNullOrEmpty(_ffmpegPath) ? FfmpegLocator.FindTool("ffmpeg.exe") : _ffmpegPath;
             if (string.IsNullOrEmpty(path))
             {
-                lblFfmpeg.Text = "ffmpeg: NOT FOUND - use 'Download ffmpeg' below.";
+                lblFfmpeg.Text = "ffmpeg: NOT FOUND" + Environment.NewLine +
+                                 "   use 'Download ffmpeg' below to install it";
                 return;
             }
 
             var version = FfmpegManager.GetVersion(path);
-            lblFfmpeg.Text = "ffmpeg: " + (version ?? "unknown version") + Environment.NewLine + "   " + path;
+
+            // The path goes on its own line and the label now auto-sizes with a
+            // wrapping width, so a long path wraps instead of being clipped away.
+            lblFfmpeg.Text = "ffmpeg: " + (version ?? "unknown version") + Environment.NewLine +
+                             "   " + path;
+
             StackAboutContent();
         }
 
