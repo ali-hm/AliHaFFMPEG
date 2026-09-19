@@ -71,11 +71,22 @@ namespace AliHaFFMPEG.Core
                 lines.Add("powershell -NoProfile -ExecutionPolicy Bypass -Command \"Expand-Archive -LiteralPath '" +
                           downloadedFile + "' -DestinationPath '" + extractDir + "' -Force\"");
                 lines.Add("xcopy /E /Y /I \"" + extractDir + "\\*\" \"" + installDirectory + "\\\" > nul");
+                // Remove the downloaded zip after a successful copy so updates don't pile up.
+                // "if not errorlevel 1" means the xcopy exit code was 0 (success); on failure the zip is kept for diagnosis.
+                lines.Add("if not errorlevel 1 del /F /Q \"" + downloadedFile + "\" > nul");
                 lines.Add("rmdir /S /Q \"" + extractDir + "\" > nul");
             }
             else
             {
                 lines.Add("copy /Y \"" + downloadedFile + "\" \"" + exeFullPath + "\" > nul");
+                // Same guard for the single-file case, but never delete when source and destination are the same file.
+                if (!string.Equals(
+                        Path.GetFullPath(downloadedFile),
+                        Path.GetFullPath(exeFullPath),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    lines.Add("if not errorlevel 1 del /F /Q \"" + downloadedFile + "\" > nul");
+                }
             }
 
             lines.Add("start \"\" \"" + exeFullPath + "\"");
