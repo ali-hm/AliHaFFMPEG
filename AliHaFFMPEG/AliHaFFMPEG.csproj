@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net10.0-windows</TargetFramework>
         <UseWindowsForms>true</UseWindowsForms>
         <ApplicationIcon>app.ico</ApplicationIcon>
-        <Version>2.1.0</Version>
+        <Version>2.2.0</Version>
         <AssemblyTitle>AliHa FFMPEG</AssemblyTitle>
         <Product>AliHa FFMPEG</Product>
         <Company>Ali Hamidi</Company>
